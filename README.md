@@ -1,1 +1,3 @@
-# bottom_up_HCD
+# bottom-up hierarchical community detection algorithm
+## Dependencies
+
