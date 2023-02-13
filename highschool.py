@@ -103,19 +103,3 @@ for algo in algos:
         node_size=ns.get(algo, 4),
         legend_size=8,
     )
-
-pos, centers = positions.pos_flex(
-    G,
-    list(classes.values()),
-    scale=1 / 3,
-)
-for num_cluster in range(1, len(hcs["rbp"].bottom_communities) + 1):
-    plots.plot_for_recur_clustering(
-        G,
-        hcs["rbp"].bottom_communities,
-        hcs["rbp"].Z,
-        num_cluster,
-        pos=pos,
-        node_size=20,
-        edge_width=0.1 * np.array(list(G.edges("weight"))),
-    )
