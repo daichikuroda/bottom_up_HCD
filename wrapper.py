@@ -115,6 +115,7 @@ class hierarchical_communities:
                 metrics.append("small_Stk")
             metrics = list(set(metrics) & metrics_set)
         self.metrics = {met: None for met in metrics}
+        self.e_mapping_for_paris = None
         if algo == "rbu" or algo == "bottom_up" or algo == "bottom-up":
             if initial_communities is None and initial_labels is None:
                 self.bottom_label, _zeta_p = cla.community_detection(
@@ -168,9 +169,9 @@ class hierarchical_communities:
                 nodes_list[0] != 0 or nodes_list[-1] != len(nodes_list) - 1
             )
             if graph_num_convert:
-                e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
-                d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
-                G2 = nx.relabel_nodes(G, e_mapping_for_paris)
+                self.e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
+                self.d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
+                G2 = nx.relabel_nodes(G, self.e_mapping_for_paris)
             else:
                 G2 = G
             self.Z = paris(G2)
@@ -178,12 +179,14 @@ class hierarchical_communities:
             self.communities = utils.best_clustering(self.Z, 0)
             if graph_num_convert:
                 self.communities = [
-                    np.array([d_mapping_for_paris[n] for n in c])
+                    np.array([self.d_mapping_for_paris[n] for n in c])
                     for c in self.communities
                 ]
+
             self.label = utild.communities_to_label(
                 self.communities, nodes_list=nodes_list
             )
+
         elif algo == "bayesian":
             # in bayesian the node number should be consecutive from 0
             graph_num_convert = (
@@ -273,6 +276,15 @@ class hierarchical_communities:
             legend_on=True,
             legend_size=None,
         )
+
+    def convert_communities_of_paris(self, input_communities):
+        if self.d_mapping_for_paris is None:
+            return input_communities
+        else:
+            return [
+                np.array([self.d_mapping_for_paris[n] for n in c])
+                for c in input_communities
+            ]
 
 
 class community_detections:

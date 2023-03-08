@@ -84,9 +84,12 @@ if __name__ == "__main__":
         )
         if algo == "paris":
             for clustering_rank in [1, 2, 3, 4]:
-                clusterings.append(
-                    utils.best_clustering(hcs["paris"].Z, k=clustering_rank)
-                )
+                _cl = hcs["paris"].convert_communities_of_paris(
+                        utils.best_clustering(hcs["paris"].Z, k=clustering_rank)
+                    )
+                if isolated_cluster:
+                    _cl += [np.array(S[1].nodes())]
+                clusterings.append(_cl)
         else:
             for k in range(2, len(hcs[algo].bottom_communities) + 1):
                 _cl = utild.clustering_k_communities(
