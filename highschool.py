@@ -14,7 +14,7 @@ import csv
 from sklearn.metrics.cluster import adjusted_mutual_info_score, adjusted_rand_score
 import utild
 import recursive as rec
-import beth_hessian as cla
+import bethe_hessian as cla
 import spectrald as spect
 import plots
 import measurements as mea
@@ -67,8 +67,7 @@ for algo in algos:
         algo,
         weighted=True,
         num_communities=9,
-        continuous_node_label=False,
-        # **add_params.get(algo, dict())
+        **add_params.get(algo, dict())
     )
     print("AMI: ", adjusted_mutual_info_score(true_label, hcs[algo].labelk))
     print("num community: ", len(hcs[algo].communities))
@@ -103,3 +102,4 @@ for algo in algos:
         node_size=ns.get(algo, 4),
         legend_size=8,
     )
+    

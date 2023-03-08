@@ -27,6 +27,7 @@ def non_stop(sG):
     else:
         return True
 
+
 # initial communitites must be numpy array list
 def recursive_bipartion(
     G,
@@ -56,26 +57,27 @@ def recursive_bipartion(
             nodes = community_to_divide.pop()
             cb = community_bits_to_go.pop()
         sG = G.subgraph(nodes)
-        to_continue = utild.roop_for_converge(
-            stopping_rule, sG, max_roop=non_converge_iter
-        )
+        # to_continue = utild.roop_for_converge(
+        #     stopping_rule, sG, max_roop=non_converge_iter
+        # )
+        to_continue = stopping_rule(sG)
         if to_continue is True:
             count += 1
             OUT = "Partion count : " + str(count).zfill(2)
             sys.stdout.write("\r%s" % OUT)
-            label, _centroid = utild.roop_for_converge(
-                partion_algo, sG, max_roop=non_converge_iter
-            )
+            # label, _centroid = utild.roop_for_converge(
+            #     partion_algo, sG, max_roop=non_converge_iter, nodelist=nodes
+            # )
+            label, _centroid = partion_algo(sG, nodelist=nodes)
             nodes_divided = utild.return_communities(label, nodes)
             if len(nodes_divided) >= 2:
                 community_to_divide += nodes_divided
                 community_bits_to_go += [cb + [0], cb + [1]]
             else:  # in case this fails to split
-                print("SPLIT FAIL!!!")
+                print("SPLIT FAILS!!!")
                 nodes_per_community.append(nodes)
                 community_bits.append(cb)
         elif to_continue is False:
-            # print("False")
             nodes_per_community.append(nodes)
             community_bits.append(cb)
         else:
@@ -137,12 +139,12 @@ def similarity(G, label, sim_algo=similarity_between):
 
 
 def condensed_distance_similarity(
-    G, label, sim_algo=similarity_between, weighted=False
+    G, label, sim_algo=similarity_between, weighted=False, nodelist=None
 ):
     if weighted:
-        A = nx.to_numpy_array(G)
+        A = nx.to_numpy_array(G, nodelist=nodelist)
     else:
-        A = nx.to_numpy_array(G, weight=None)
+        A = nx.to_numpy_array(G, weight=None, nodelist=nodelist)
     uq_label = np.unique(label)
     K = len(uq_label)
     return np.array(
@@ -165,47 +167,6 @@ def subtraction_from_1(y):
 # it's not completely guranteed that this value does not go below 0
 def subtraction_from_max(y, maxy):
     return maxy + 1 - y
-
-
-def linkage_calc_d_every(y):
-    n = int((1 + np.sqrt(len(y) * 8 + 1)) / 2)
-    Z = np.zeros((n - 1, 4))
-    distance_matrix = np.reshape([np.inf] * n**2, (n, n))
-    ind = 0
-    for i in range(n):
-        ind1 = ind + (n - i - 1)
-        distance_matrix[i, np.arange(i + 1, n)] = y[ind:ind1]
-        distance_matrix[np.arange(i + 1, n), i] = y[ind:ind1]
-        ind = ind1
-
-    clusters = list(range(n))
-    cluster_sizes = [1] * n
-    for i in range(n - 1):
-        argmin = np.argmin(distance_matrix)
-        (mini, minj) = (argmin // (n - i), argmin % (n - i))
-        if mini > minj:  # deleting from the larger value to avodi misindexing
-            ci = clusters.pop(mini)
-            cj = clusters.pop(minj)
-            csi = cluster_sizes.pop(mini)
-            csj = cluster_sizes.pop(minj)
-        else:
-            ci = clusters.pop(minj)
-            cj = clusters.pop(mini)
-            csi = cluster_sizes.pop(minj)
-            csj = cluster_sizes.pop(mini)
-        Z[i] = [ci, cj, distance_matrix[mini][minj], csi + csj]
-        clusters.append(n + i)
-        cluster_sizes.append(csi + csj)
-        indexes = np.setdiff1d(np.arange(n - i), [mini, minj])
-        new_distances = distance_matrix[mini] + distance_matrix[minj]
-        distance_matrix = distance_matrix[:, indexes][indexes, :]
-        distance_matrix = np.vstack(
-            [
-                np.hstack([distance_matrix, np.array([new_distances[indexes]]).T]),
-                [np.hstack([new_distances[indexes], [np.inf]])],
-            ]
-        )
-    return Z
 
 
 def linkage_update_sim_each2(
@@ -267,24 +228,27 @@ def linkage_update_sim_each2(
 def bottom_up(
     G,
     bottom_label,
+    nodelist=None,
     sim_algo=similarity_between,
-    linkage_algo="linkage",
+    linkage_algo="update_each",
     sim_to_distance=subtraction_from_1,
     weighted=False,
 ):
     if weighted:
         sim_to_distance = invert
-    # similarities = similarity(G, label, sim_algo=sim_algo)
-    # y = utild.condensed_distance_matrix(1-similarities)
     if linkage_algo == "linkage":
         similarities = condensed_distance_similarity(
-            G, bottom_label, sim_algo=sim_algo, weighted=weighted
+            G, bottom_label, sim_algo=sim_algo, weighted=weighted, nodelist=nodelist
         )
         y = sim_to_distance(similarities)
         return sch.linkage(y, method="single")
     elif linkage_algo == "update_each":
         similarities2 = condensed_distance_similarity(
-            G, bottom_label, sim_algo=similarity_between2, weighted=weighted
+            G,
+            bottom_label,
+            sim_algo=similarity_between2,
+            weighted=weighted,
+            nodelist=nodelist,
         )
         community_sizes = [np.sum(bottom_label == l) for l in np.unique(bottom_label)]
         return linkage_update_sim_each2(

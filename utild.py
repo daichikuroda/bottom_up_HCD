@@ -91,22 +91,8 @@ def run_time_algo2(algo, *params, **options):
     print(t)
     return C, t
 
-
 def calc_p_from_a(a, N):
     return np.array(a) * np.log(N) / N
-
-
-def calc_overlapped_portion(c1, c2):
-    return len(set(c1) & set(c2)) / len(set(c1) | set(c2))
-
-
-def smart_indexing(llist, indexes):
-    return [llist[i] for i in indexes]
-
-
-def smart_indexing_by_bools(llist, bools):
-    return [llist[i] for (i, b) in enumerate(bools) if b]
-
 
 def smart_assigment(np_array, indexes1, indexes2, assign_value):
     a = np_array[indexes1, :]
@@ -114,11 +100,14 @@ def smart_assigment(np_array, indexes1, indexes2, assign_value):
     np_array[indexes1, :] = a
     return np_array  # no need to return this but for the clarification
 
+def select_several_indices_in_list(llist, indices):
+    return sum([list(llist[i]) for i in indices], [])
 
-def roop_for_converge(func, *params, max_roop=10):
+def roop_for_converge(func, *params, **options):
+    max_roop = options.pop("max_roop", 10)
     for i in range(max_roop - 1):
         try:
-            r = func(*params)
+            r = func(*params, **options)
         except sp.linalg.ArpackNoConvergence as e:
             print(e)
             pass
@@ -128,7 +117,7 @@ def roop_for_converge(func, *params, max_roop=10):
         else:
             break
     else:
-        r = func(*params)
+        r = func(*params, **options)
     return r
 
 
@@ -160,26 +149,9 @@ def communities_to_label(communities, nodes_list=None):
     return label
 
 
-# the label is in the ascending order of the nodes numbers
-def communities_to_label_general(communities):
-    communities = [list(c) for c in communities]
-    mapping = dict(
-        zip(
-            sorted(sum(communities, [])),
-            np.arange(sum([len(c) for c in communities])),
-        )
-    )
-    label = np.zeros(sum([len(c) for c in communities]), dtype=int)
-    for l, c in enumerate(communities):
-        for cc in c:
-            label[mapping[cc]] = l
-    return label  # , mapping
-
-
 def arrange_len_community_bits(community_bits):
     maxl = max([len(cb) for cb in community_bits])
     return [cb + [0] * (maxl - len(cb)) for cb in community_bits]
-
 
 def st_small_to_st(St_small, communities, N=None):
     if N is None:
@@ -194,25 +166,6 @@ def st_small_to_st(St_small, communities, N=None):
 
     return St
 
-
-def select_several_indices_in_list(llist, indices):
-    return sum([list(llist[i]) for i in indices], [])
-
-
-# return consensed_distance_matrix for scipy linkage parameter y
-# upper triangular of distance matrix
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
-def condensed_distance_matrix(distance_matrix):
-    return sum([list(d[(i + 1) :]) for (i, d) in enumerate(distance_matrix)], [])
-
-
-def distance_matrix_to_condensed_one(distance_matrix):
-    K = len(distance_matrix)
-    return np.array(
-        [distance_matrix[ik][jk] for ik in range(K) for jk in range(ik + 1, K)]
-    )
-
-
 def nx_dendrogram(D, communities, from_community_bits=False):
     n = len(D) + 1  # number of clusters
     if not from_community_bits and len(communities) != n:
@@ -224,7 +177,6 @@ def nx_dendrogram(D, communities, from_community_bits=False):
     cluster = {i: list(communities[i]) for i in range(n)}
     dG = nx.DiGraph()
     nodes = sum([list(c) for c in communities], [])
-    # dG.add_nodes_from(nodes)
     num_for_tree = 10 ** len(str(max(nodes)))
     mapping_encode = dict(zip(nodes, range(len(nodes))))
     mapping_decode = dict(zip(range(len(nodes)), nodes))
@@ -241,7 +193,6 @@ def nx_dendrogram(D, communities, from_community_bits=False):
             mapping_decode[num_for_tree + ic] = _node
         else:
             print("there is empty community")
-        # print(num_for_tree + ic)
     if len(cluster) == 1:
         cluster_community = communities
     else:
@@ -262,8 +213,6 @@ def nx_dendrogram(D, communities, from_community_bits=False):
                     for imc, ucb in enumerate(ucbs)
                 }
                 for imc, coms in mcoms.items():
-                    print("add node", imc)
-                    print("add edge", coms)
                     dG.add_node(imc, distance=h)
                     for com in coms:
                         dG.add_edge(imc, com)
@@ -272,7 +221,6 @@ def nx_dendrogram(D, communities, from_community_bits=False):
 
         else:
             for t in range(n - 1):
-                # print(t, cluster)
                 ic0 = int(D[t][0])
                 ic1 = int(D[t][1])
                 c0 = cluster.pop(ic0)
@@ -280,17 +228,13 @@ def nx_dendrogram(D, communities, from_community_bits=False):
                 dG.add_node(n + t + num_for_tree, distance=D[t][2])
                 dG.add_edge(n + t + num_for_tree, ic0 + num_for_tree)
                 dG.add_edge(n + t + num_for_tree, ic1 + num_for_tree)
-                # print(n + t + num_for_tree)
                 cluster[n + t] = c0 + c1
 
-    # cluster_community = [
-    #     select_several_indices_in_list(communities, c) for c in cluster.values()
-    # ]
     dG = nx.relabel_nodes(dG, mapping_decode)
     return dG, list(cluster.values())
 
 
-def dG_with_distance(dG, logscale=True, resolution=100, last_size=1/30):
+def dG_with_distance(dG, logscale=True, resolution=100, last_size=1 / 30):
     def clog(x):
         if x is not None:
             return np.log(x)
@@ -347,11 +291,6 @@ def dG_with_distance(dG, logscale=True, resolution=100, last_size=1/30):
                 dG2.add_edge(bnn, _n)
     return dG2
 
-
-def theoritical_threashold(K, N):
-    return ((K * np.log(N)) / N) ** (1 / 2)
-
-
 def create_group_matrix(num_layer, num_child=2):
     group_matrix = np.ones(
         (num_child ** (num_layer - 1), num_child ** (num_layer - 1)), dtype=int
@@ -363,9 +302,7 @@ def create_group_matrix(num_layer, num_child=2):
             group_matrix[
                 ig * num_in_group : (ig + 1) * num_in_group,
                 ig * num_in_group : (ig + 1) * num_in_group,
-            ] = (
-                l
-            )
+            ] = l
     return group_matrix
 
 
@@ -413,6 +350,23 @@ def clustering_k_communities(
         return_cluster_community_dict=return_cluster_community_dict,
     )
 
+def clustering_k_communities_by_similarities(D, k, communities, similarities):
+    n = np.shape(D)[0] + 1  # number of clusters
+    k = min(k, n - 1)
+    cluster = {i: communities[i] for i in range(n)}
+    sim_argsorted = list(np.argsort(similarities))[::-1]
+    while len(cluster) > k:
+        i = 1
+        t = sim_argsorted[-i]
+        while not (int(D[t][0]) in cluster.keys() and int(D[t][1]) in cluster.keys()):
+            i += 1
+            t = sim_argsorted[-i]
+        else:
+            t = sim_argsorted.pop(-i)
+            cluster[n + t] = np.hstack(
+                (cluster.pop(int(D[t][0])), cluster.pop(int(D[t][1])))
+            )
+    return list(cluster.values())
 
 def simple_ave(X, X0):
     return np.mean(abs(X - X0))
@@ -420,3 +374,12 @@ def simple_ave(X, X0):
 
 def l21(X, X0):
     return np.mean(np.sqrt(np.sum((X - X0) ** 2, axis=0)))
+
+
+def drop_edges(G, q, parent_seed=None):
+    G2 = G.copy()
+    _rng = np.random.default_rng(parent_seed)
+    edges = np.array(G2.edges())
+    _edges_to_rm = edges[_rng.random(len(edges)) < q]
+    G2.remove_edges_from(_edges_to_rm)
+    return G2

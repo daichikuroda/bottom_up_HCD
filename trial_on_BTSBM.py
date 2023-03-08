@@ -13,7 +13,6 @@ import wrapper as wra
 
 
 def simulate(
-    filename,
     a_last,
     beta,
     num_nodes=200,
@@ -33,9 +32,9 @@ def simulate(
         "err_St",
         "ami",
         "ari",
-        "err_St_old",
-        "ave_St_err",
-        "ave_P_err",
+        # "err_St_old",
+        # "ave_St_err",
+        # "ave_P_err",
     ]
 
     algos = ["rbu", "rbp", "paris"]
@@ -83,20 +82,19 @@ def simulate(
 
 
 if __name__ == "__main__":
-    # arg = sys.argv
-    arg = ["", "test", 0.5, 36]
-    # arg = ["", "test", 0.3, 121]
-    filename = arg[1]
-    beta = float(arg[2])
-    a_last = int(arg[3])
+    arg = sys.argv
+    beta = float(arg[1])
+    a_last = int(arg[2])
+    num_nodes = int(arg[3])
+    num_layer = int(arg[4]) + 1
+    num_child = int(arg[5])
     print("Simulation started at ", time.asctime(time.localtime()))
     com_detections = simulate(
-        filename,
         a_last,
         beta,
-        num_nodes=200,
-        num_layer=5,
-        num_child=2,
+        num_nodes=num_nodes,
+        num_layer=num_layer,
+        num_child=num_child,
         stopping_rule="stop_bethe_hessian",
     )
     print("Simulation ended at ", time.asctime(time.localtime()))

@@ -14,6 +14,7 @@ import numpy as np
 import utild
 import csv
 import positions
+import datetime
 
 
 def normal(x):
@@ -77,14 +78,39 @@ def change_node_nums(G):
     return G, to_get_original_mapping, mapping
 
 
-def high_school_net():
+# select_dates =[0,1,2,3,4]
+def high_school_net(selected_dates=False, weight_convert="log"):
     high_school_folder = "./high_school_data/"
     # contact_diaries_net_f = high_school_folder + "Contact-diaries-network_data_2013.csv"
     contact_net_f = high_school_folder + "High-School_data_2013.csv"
-    datas = np.loadtxt(contact_net_f, dtype=int, usecols=(1, 2))
-    meta_data_f = high_school_folder + "metadata_2013.txt"
+    if selected_dates is False:
+        datas = np.loadtxt(contact_net_f, dtype=int, usecols=(1, 2))
+    else:
+        datas = np.loadtxt(contact_net_f, dtype=int, usecols=(0, 1, 2))
+        dates = [datetime.datetime.fromtimestamp(d).date() for d in datas[:, 0]]
+        unique_dates = np.unique(dates)
+        datas = np.array(
+            [
+                data[1:3]
+                for date, data in zip(dates, datas)
+                if date in unique_dates[selected_dates]
+            ],
+            dtype=int,
+        )
+
     edges, weights = np.unique(datas, axis=0, return_counts=True)
-    weights = np.log(weights)
+    meta_data_f = high_school_folder + "metadata_2013.txt"
+    if weight_convert == "log":
+        weights = np.log(weights)
+    elif weight_convert == "proximity":
+        degrees = dict()
+        for e, w in zip(edges, weights):
+            degrees[e[0]] = degrees.get(e[0], 0) + w
+            degrees[e[1]] = degrees.get(e[1], 0) + w
+        proximity = [
+            w / (degrees[e[0]] + degrees[e[1]] - w) for (e, w) in zip(edges, weights)
+        ]
+        weights = np.array(proximity)
     edge_list = np.hstack((edges, weights.reshape((len(weights), 1))))
     G = network_from_edgelist(edge_list)
     # G, to_get_original_mapping, mapping = change_node_nums(G)
@@ -99,6 +125,43 @@ def high_school_net():
     nx.set_node_attributes(G, class_dict, "class")
     nx.set_node_attributes(G, gender_dict, "gender")
     return G  # , to_get_original_mapping, mapping
+
+
+def high_school_net_accumulate(num_time_steps, weight_convert="log"):
+    high_school_folder = "./high_school_data/"
+    # contact_diaries_net_f = high_school_folder + "Contact-diaries-network_data_2013.csv"
+    contact_net_f = high_school_folder + "High-School_data_2013.csv"
+    datas = np.loadtxt(contact_net_f, dtype=int, usecols=(0, 1, 2))
+    times = datas[:, 0]
+    uq_times = np.unique(times)
+    end_time = uq_times[num_time_steps - 1]
+    datas = datas[times <= end_time, 1:3]
+    edges, weights = np.unique(datas, axis=0, return_counts=True)
+    meta_data_f = high_school_folder + "metadata_2013.txt"
+    if weight_convert == "log":
+        weights = np.log(weights)
+    elif weight_convert == "proximity":
+        degrees = dict()
+        for e, w in zip(edges, weights):
+            degrees[e[0]] = degrees.get(e[0], 0) + w
+            degrees[e[1]] = degrees.get(e[1], 0) + w
+        proximity = [
+            w / (degrees[e[0]] + degrees[e[1]] - w) for (e, w) in zip(edges, weights)
+        ]
+        weights = np.array(proximity)
+    edge_list = np.hstack((edges, weights.reshape((len(weights), 1))))
+    G = network_from_edgelist(edge_list)
+    class_dict = {}
+    gender_dict = {}
+    with open(meta_data_f, "r") as f:
+        csvreader = csv.reader(f, delimiter="\t")
+        for row in csvreader:
+            class_dict[int(row[0])] = row[1]
+            gender_dict[int(row[0])] = row[2]
+
+    nx.set_node_attributes(G, class_dict, "class")
+    nx.set_node_attributes(G, gender_dict, "gender")
+    return G, len(uq_times)  # , to_get_original_mapping, mapping
 
 
 def handle_inf_in_Z(Z, method="multiply", quantity=2):

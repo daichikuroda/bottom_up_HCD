@@ -121,10 +121,14 @@ def find_zeta(A, rho, n_clusters, eps, increase_maxiter=False):
             except scipy.sparse.linalg.ArpackNoConvergence as _e:
                 if increase_maxiter is True:
                     maxiter = 10**2 * len(H)
-                    v, X = scipy.sparse.linalg.eigsh(H, k=i, which="SA", maxiter = maxiter)
+                    v, X = scipy.sparse.linalg.eigsh(
+                        H, k=i, which="SA", maxiter=maxiter
+                    )
                 elif increase_maxiter is int:
                     maxiter = increase_maxiter * 10 * len(H)
-                    v, X = scipy.sparse.linalg.eigsh(H, k=i, which="SA", maxiter = maxiter)
+                    v, X = scipy.sparse.linalg.eigsh(
+                        H, k=i, which="SA", maxiter=maxiter
+                    )
 
             idx = v.argsort()
             v = v[idx]
@@ -159,7 +163,7 @@ class ReturnValue:
         self.zeta_v = zeta_p
 
 
-def community_detection(G, weighted=False, increase_maxiter=False, *args, **kwargs):
+def community_detection(G, weighted=False, increase_maxiter=False, nodelist=None, *args, **kwargs):
 
     """Function to perform community detection on a graph with n nodes and k communities according to Algorithm 2
     Use :
@@ -182,9 +186,9 @@ def community_detection(G, weighted=False, increase_maxiter=False, *args, **kwar
 
     """
     if weighted:
-        A = nx.to_scipy_sparse_matrix(G)
+        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     else:
-        A = nx.to_scipy_sparse_matrix(G, weight=None)
+        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist, weight=None)
     n_max = kwargs.get("n_max", 10**3)  # there is max
     real_classes = kwargs.get("real_classes", [None])
     n_clusters = kwargs.get("n_clusters", None)

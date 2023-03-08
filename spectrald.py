@@ -20,27 +20,14 @@ import measurements as mea
 
 
 def return_Lrw2(W):
-    # # D = np.diag(np.sum(W, axis=1))
-    # d_inverse = np.array(W.sum(axis=0, dtype=float))[0] ** (-1)
-    # # d_inverse = np.sum(W, axis=1, dtype=float) ** (
-    # #     -1
-    # # )  # this does not work when there is 0 entry
-    # d_inverse[np.isinf(d_inverse)] = 0  # this is to deal inf
-    # # L = D - W
     D_inverse = sp.identity(W.shape[0]).multiply(W.sum(axis=0, dtype=float)).power(-1)
     Lrw = sp.identity(np.shape(W)[0]) - D_inverse * W
     return Lrw
 
 
 def return_Lrw(W):
-    # D = np.diag(np.sum(W, axis=1))
     d_inverse = np.array(W.sum(axis=0, dtype=float))[0] ** (-1)
-    # d_inverse = np.sum(W, axis=1, dtype=float) ** (
-    #     -1
-    # )  # this does not work when there is 0 entry
     d_inverse[np.isinf(d_inverse) + np.isnan(d_inverse)] = 0  # this is to deal inf
-    # d_inverse[np.isnan(d_inverse)] = 0
-    # L = D - W
     Lrw = sp.identity(W.shape[0]) - W.multiply(
         np.reshape(d_inverse, (len(d_inverse), 1))
     )
@@ -50,18 +37,16 @@ def return_Lrw(W):
 def return_Lsym(W, d):
     d_12 = d ** (-1 / 2)
     d_12[np.isinf(d_12) + np.isnan(d_12)] = 0  # this is to deal inf
-    # d_12[np.isnan(d_12)] = 0
-    # why is this working
     D_12 = sp.identity(W.shape[0]).multiply(
         d_12
     )  # may be able to be faster than this if you implemnt this like def return_Lrw(W)
     return sp.identity(W.shape[0]) - D_12 * W * D_12
 
 
-def spectral_bup(G, k=20):
+def spectral_bup(G, k=20, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G)
+    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     deg = sp.csr_matrix.dot(A, np.ones(n))
     D = sp.diags(deg)
     L = D - A
@@ -71,30 +56,22 @@ def spectral_bup(G, k=20):
         L, min(k, n - 1), sigma=-1
     )  # since all the eigenvalues >= 0 & we need smallests
     index = np.argsort(lam)
-    # lam, V = splinalg.eigh(Lrw.todense())
-    # index = np.argsort(lam)[: min(k, n - 1)]
     lam, V = lam[index], V[:, index]
 
     return sch.linkage(V, method="ward")
 
 
-def spectral_normalized_laplacian_bup(G, k=20):
+def spectral_normalized_laplacian_bup(G, k=20, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G)
+    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     Lrw = return_Lrw(A)
-    # vals, vecs = eigs(Lrw, k=min(k, n - 1), which="SR")  # which="SM")
-    # # vals, vecs = eigs(Lrw, k=num_clusters_want, which="SR")  # which="SM")
-    # real_vals, real_vecs = vals.real, vecs.real
-    # return sch.linkage(real_vecs, method="ward")
     lam, V = eigsh(
         Lrw,
         min(k, n - 1),
         sigma=-0.1,  # since all the eigenvalues >= 0 & we need smallests
     )
     index = np.argsort(lam)
-    # lam, V = splinalg.eigh(Lrw.todense())
-    # index = np.argsort(lam)[: min(k, n - 1)]
     lam, V = lam[index], V[:, index]
     return sch.linkage(V, method="ward")
 
@@ -104,10 +81,10 @@ def spectral_normalized_laplacian_bup(G, k=20):
 # =============================================================================
 
 
-def spectral(G, k=2):
+def spectral(G, k=2, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G)
+    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     deg = sp.csr_matrix.dot(A, np.ones(n))
     D = sp.diags(deg)
     L = D - A
@@ -117,47 +94,36 @@ def spectral(G, k=2):
         L, min(k, n - 1), sigma=-1
     )  # since all the eigenvalues >= 0 & we need smallests
     index = np.argsort(lam)
-    # lam, V = splinalg.eigh(Lrw.todense())
-    # index = np.argsort(lam)[: min(k, n - 1)]
     lam, V = lam[index], V[:, index]
     centroid, label = kmeans2(V, k, minit="++")
     return label, centroid
 
 
-def spectral_normalized_laplacian(G, k=2):
+def spectral_normalized_laplacian(G, k=2, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G)
+    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     Lrw = return_Lrw(A)
-    # vals, vecs = eigs(Lrw, k=min(k, n - 1), which="SR")  # which="SM")
-    # # vals, vecs = eigs(Lrw, k=num_clusters_want, which="SR")  # which="SM")
-    # real_vals, real_vecs = vals.real, vecs.real
-    # return sch.linkage(real_vecs, method="ward")
     lam, V = eigsh(
         Lrw,
         min(k, n - 1),
         sigma=-0.1,  # since all the eigenvalues >= 0 & we need smallests
     )
     index = np.argsort(lam)
-    # lam, V = splinalg.eigh(Lrw.todense())
-    # index = np.argsort(lam)[: min(k, n - 1)]
     lam, V = lam[index], V[:, index]
     centroid, label = kmeans2(V, k, minit="++")
     return label, centroid
 
 
-def regularized_spectral(G, tau=0.1, k=2):
+def regularized_spectral(G, tau=0.1, k=2, nodelist=None):
     # regularized Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_numpy_array(G)
+    A = nx.to_numpy_array(G, nodelist=nodelist)
     d = np.array(A.sum(axis=0))
     Atau = A + tau * np.mean(d) / n
     dtau = np.array(Atau.sum(axis=0))
     Ltau = return_Lsym(Atau, dtau)
     lam, V = splinalg.eigh(Ltau)
-    # lam, V = eigsh(
-    #     Ltau, min(k, n - 1), sigma=-1
-    # )  # is it ok to seek eigenvalues around -1? this is to find the smallest eigenvalues?
     index = np.argsort(lam)[: min(k, n - 1)]
     lam, V = lam[index], V[:, index]
     centroid, label = kmeans2(V, k, minit="++")
@@ -181,9 +147,8 @@ def stopping_rule2015(G, k=2):
         vals = eigs(Bnb, min(k, n - 1), which="LR", return_eigenvectors=False)
         vals2 = eigs(
             Bnb, min(k, n - 1), which="SR", return_eigenvectors=False
-        )  # which="SM")
+        ) 
         vals = np.unique(list(vals) + list(vals2))
-        # vals = splinalg.eigvals(Bnb.todense())
         if len(vals) < k:
             to_continue = False
         else:
@@ -203,18 +168,17 @@ def linkage_for_recursive_algo(community_bits):
         community_bits = utild.arrange_len_community_bits(community_bits)
         return sch.linkage(community_bits, method="single", metric=mea.cb_distance)
 
-
 # =============================================================================
 # For bethe Hessian
 # =============================================================================
 
 
-def betheHessian(G, r=None, weighted=False):
+def betheHessian(G, r=None, weighted=False, nodelist=None):
     n = len(G.nodes())
     if weighted:
-        A = nx.to_scipy_sparse_matrix(G)
+        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
     else:
-        A = nx.to_scipy_sparse_matrix(G, weight=None)
+        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist, weight=None)
     degrees = A.sum(axis=0, dtype=float)
     if r == None:
         d = np.array(degrees)
@@ -224,17 +188,11 @@ def betheHessian(G, r=None, weighted=False):
         r = np.sqrt(r)
 
     if weighted:
-        # nodes_index = dict(zip(G.nodes(), range(n)))
-        # reverse_node_index = dict(zip(range(n), G.nodes()))
         mapping = dict(zip(G, range(0, n)))
         GG = nx.relabel_nodes(G, mapping)
-        # using Maximilien's code
         A = A.todense()
         H = np.zeros((n, n))
         for i in range(n):
-            # neigh_i = [
-            #     nodes_index[u] for u in G.neighbors(reverse_node_index[i])
-            # ]  # use node_index to handle the skipped node number
             neigh_i = [u for u in GG.neighbors(i)]
             H[i, i] = 1 + np.sum(
                 [A[i, j] ** 2 / (r**2 - A[i, j] ** 1) for j in neigh_i]
@@ -252,10 +210,8 @@ def stop_bethe_hessian(G, k=2, r=None, weighted=False):
     if len(G.nodes()) <= 1:
         to_continue = False
     else:
-        # TODO: maybe you can use scipy sparse version
         lam, V = bethe_hessian_spectrum(G, r=None, weighted=False)
         index = lam < 0
-        # lam = lam[index]
         to_continue = np.count_nonzero(index) >= k
     return to_continue
 

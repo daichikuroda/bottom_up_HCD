@@ -21,7 +21,6 @@ sizes_merge = {
 
 
 def simulate(
-    filename,
     a_last,
     beta,
     tree_shape="example1",
@@ -146,31 +145,20 @@ def simulate(
 
 
 if __name__ == "__main__":
-    # arg = sys.argv
-    arg = [
-        "",
-        "test_unbalanced",
-        0.5,
-        64,
-        "example1",
-        100,
-        # "merge_original",
-        "merge",
-    ]
-    filename = arg[1]
-    beta = float(arg[2])
-    a_last = float(arg[3])
-    tree_shape = arg[4]
-    num_nodes_unit = int(arg[5])
-    tree_type = arg[6]  # merge / equal
+    arg = sys.argv
+    beta = float(arg[1])
+    a_last = float(arg[2])
+    tree_shape = arg[3]
+    num_nodes_unit = int(arg[4])
+    # tree_type = arg[5]  # merge / equal
     print("Simulation started at ", time.asctime(time.localtime()))
     simulate(
-        filename,
         a_last,
         beta,
         tree_shape,
         num_nodes_unit,
-        tree_type,
+        # tree_type = tree_type,
+        tree_type="merge",
         num_layer=6,
         stopping_rule="stop_bethe_hessian",
     )

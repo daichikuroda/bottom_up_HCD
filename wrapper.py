@@ -8,13 +8,21 @@ import numpy as np
 import networkx as nx
 from sklearn.metrics.cluster import adjusted_mutual_info_score, adjusted_rand_score
 
-import beth_hessian as cla
+import bethe_hessian as cla
 import utild
 import recursive as rec
 import spectrald as spect
 import measurements as mea
 import plots
+import importlib
 
+spam_spec = importlib.util.find_spec("graph_tool")
+gt_found = spam_spec is not None
+if gt_found:
+    import bayesian_clsutering as bc
+else:
+    print("cannot find graph tool.")
+    print("You cannot try bayesian.")
 sys.path += ["./Paris/paris_codes/"]
 from paris import paris
 import utils
@@ -48,7 +56,8 @@ calc_funcs = {
     "ari": adjusted_rand_score,
 }
 
-
+# nodes are expected to be labeled as 0,1,2,...,N
+# in Z the cluster number is consecutive number starting from 0
 class hierarchical_communities:
     def __init__(
         self,
@@ -60,16 +69,36 @@ class hierarchical_communities:
         initial_labels=None,
         weighted=False,
         group_name=None,  # "values",
-        continuous_node_label=True,
-        partion_algo=spect.regularized_spectral,
+        deg_corr=True,
+        edge_distribution="best",
+        nodes_sort=True,
     ):
+        if not algo in [
+            "rbu",
+            "rbp",
+            "top-down",
+            "top_down",
+            "bottom-up",
+            "bottom_up",
+            "paris",
+        ]:
+            if algo != "bayesian" or not gt_found:
+                print("invalid algo")
+                algo = ""
         self.N = len(G.nodes())
         self.algo = algo
+        if nodes_sort:
+            nodes_list = np.array(sorted(G.nodes()))
+        else:
+            nodes_list = np.array(G.nodes())
+        self.np_A = nx.to_numpy_array(G, nodelist=nodes_list)
         if group_name is None:
             self.true_label = None
             self.groups = None
         else:
-            self.true_label = [v for v in dict(G.nodes(data=group_name)).values()]
+            self.true_label = [
+                v for (_k, v) in sorted(dict(G.nodes(data=group_name)).items())
+            ]
             self.groups = {}
             for n, g in G.nodes(data="value"):
                 _l = self.groups.get(g, [])
@@ -77,15 +106,9 @@ class hierarchical_communities:
                 self.groups[g] = _l
         if num_communities is not None:
             self.num_communities = num_communities
-        if continuous_node_label is False:
-            nodes_list = np.array(G.nodes())
-        else:
-            nodes_list = None
         if metrics is None:
             metrics = metrics_set
-            self.np_A = nx.to_numpy_array(G)
-        elif metrics != []:
-            self.np_A = nx.to_numpy_array(G)
+        else:
             if "St" in metrics:
                 metrics.append("small_St")
             if "Stk" in metrics:
@@ -95,7 +118,7 @@ class hierarchical_communities:
         if algo == "rbu" or algo == "bottom_up" or algo == "bottom-up":
             if initial_communities is None and initial_labels is None:
                 self.bottom_label, _zeta_p = cla.community_detection(
-                    G, weighted, increase_maxiter=100
+                    G, weighted, increase_maxiter=100, nodelist=nodes_list
                 )
                 self.bottom_communities = utild.return_communities(
                     self.bottom_label, np_nodes=nodes_list
@@ -111,7 +134,11 @@ class hierarchical_communities:
                     self.bottom_communities, nodes_list=nodes_list
                 )
             self.Z = rec.bottom_up(
-                G, self.bottom_label, linkage_algo="update_each", weighted=weighted
+                G,
+                self.bottom_label,
+                linkage_algo="update_each",
+                weighted=weighted,
+                nodelist=nodes_list,
             )
             self.label = self.bottom_label
             self.communities = self.bottom_communities
@@ -122,7 +149,7 @@ class hierarchical_communities:
                 )
             (self.bottom_communities, self.community_bits,) = rec.recursive_bipartion(
                 G,
-                partion_algo=partion_algo,
+                partion_algo=spect.regularized_spectral,
                 stopping_rule=spect.stop_bethe_hessian,
                 initial_communities=initial_communities,
             )
@@ -130,15 +157,63 @@ class hierarchical_communities:
             self.bottom_label = utild.communities_to_label(
                 self.bottom_communities, nodes_list=nodes_list
             )
+            self.similarities = mea.calc_similarities_for_top_down(
+                self.np_A, self.Z, self.bottom_communities, nodes_list=nodes_list
+            )
             self.label = self.bottom_label
             self.communities = self.bottom_communities
         elif algo == "paris":
-            self.Z = paris(G)
-            self.bottom_communities = np.arange(self.N).reshape((self.N, 1))
+            # in bayesian the node number should be consecutive from 0
+            graph_num_convert = (
+                nodes_list[0] != 0 or nodes_list[-1] != len(nodes_list) - 1
+            )
+            if graph_num_convert:
+                e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
+                d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
+                G2 = nx.relabel_nodes(G, e_mapping_for_paris)
+            else:
+                G2 = G
+            self.Z = paris(G2)
+            self.bottom_communities = nodes_list.reshape((self.N, 1))
             self.communities = utils.best_clustering(self.Z, 0)
+            if graph_num_convert:
+                self.communities = [
+                    np.array([d_mapping_for_paris[n] for n in c])
+                    for c in self.communities
+                ]
             self.label = utild.communities_to_label(
                 self.communities, nodes_list=nodes_list
             )
+        elif algo == "bayesian":
+            # in bayesian the node number should be consecutive from 0
+            graph_num_convert = (
+                nodes_list[0] != 0 or nodes_list[-1] != len(nodes_list) - 1
+            )
+            if graph_num_convert:
+                e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
+                d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
+                G2 = nx.relabel_nodes(G, e_mapping_for_paris)
+            else:
+                G2 = G
+            (
+                self.bottom_communities,
+                self.community_bits,
+                self.bottom_label,
+            ) = bc.clustering(
+                G2,
+                deg_corr=deg_corr,
+                weighted=weighted,
+                np_nodes=np.array(nodes_list),
+                edge_distribution=edge_distribution,
+            )
+            self.Z = spect.linkage_for_recursive_algo(self.community_bits)
+            if graph_num_convert:
+                self.bottom_communities = [
+                    np.array([d_mapping_for_paris[n] for n in c])
+                    for c in self.bottom_communities
+                ]
+            self.label = self.bottom_label
+            self.communities = self.bottom_communities
         if num_communities is not None:
             self.communitiesk = utild.clustering_k_communities(
                 self.Z, self.num_communities, self.bottom_communities
@@ -155,28 +230,6 @@ class hierarchical_communities:
             maxk = self.num_communities
         else:
             maxk = self.est_k()
-        # met = self.metrics[metric]
-        # if met is None and metric in ["P", "Pk"]:
-        #     met = mea.estimate_p_matrix(
-        #         self.np_A,
-        #         self.Z,
-        #         self.bottom_communities,
-        #         maxk=maxk,
-        #     )
-        # elif met is None and metric in ["St", "Stk", "small_St", "small_Stk"]:
-        #     St, St_small = mea.tree_similarity_matrix(
-        #         self.Z,
-        #         self.bottom_communities,
-        #         maxk=maxk,
-        #     )
-        #     if metric[:4] == "small":
-        #         self.metrics[metric] = St_small
-        #         self.metrics[metric[4:]] = St
-        #         met = St_small
-        #     else:
-        #         self.metrics[metric] = St
-        #         self.metrics["small_" + metric] = St_small
-        #         met = St
         if self.metrics[metric] is None:
             St, St_small, P = mea.Sts_P(
                 self.np_A,
@@ -229,11 +282,23 @@ class community_detections:
         hsbm_model,
         algos,
         metrics=None,
+        deg_corr=False,
     ):
         self.G = G
         self.hsbm_model = hsbm_model
         self.St_true = self.hsbm_model.true_St()
         self.true_label = self.hsbm_model.true_label
+        if (
+            "ttbtt" in algos
+            and len(set(["rbp", "top-down", "top_down"]) & set(algos)) == 0
+        ):
+            algos.append("rbp")
+            is_ttbtt = True
+        elif "ttbtt" in algos:
+            is_ttbtt = True
+        else:
+            is_ttbtt = False
+        algos2 = list(set(algos) - set(["ttbtt"]))
         self.algos = {
             _algo: hierarchical_communities(
                 self.G,
@@ -241,8 +306,16 @@ class community_detections:
                 self.hsbm_model.num_communities,
                 metrics=metrics,
             )
-            for _algo in algos
+            for _algo in algos2
         }
+        if is_ttbtt:
+            self.algos["ttbtt"] = hierarchical_communities(
+                self.G,
+                "rbu",
+                self.hsbm_model.num_communities,
+                metrics=metrics,
+                initial_communities=self.algos["rbp"].bottom_communities,
+            )
         self.true_metrics = {
             "P": self.hsbm_model.probability_matrix,
             "St": self.hsbm_model.true_St(),
@@ -264,12 +337,20 @@ class community_detections:
                 detected_label = self.algos[algo].label
             return calc(self.hsbm_model.true_label, detected_label)
 
-    def calc_acc_on_l(self, algo, layer):
-        clustering = utild.clustering_k_communities(
-            self.algos[algo].Z,
-            self.hsbm_model.num_clusters_on_l(layer),
-            self.algos[algo].bottom_communities,
-        )
+    def calc_acc_on_l(self, algo, layer, rbp_with_sim=False):
+        if algo in ["rbp", "top-down", "top_down"] and rbp_with_sim:
+            clustering = utild.clustering_k_communities_by_similarities(
+                self.algos[algo].Z,
+                self.hsbm_model.num_clusters_on_l(layer),
+                self.algos[algo].bottom_communities,
+                self.algos[algo].similarities,
+            )
+        else:
+            clustering = utild.clustering_k_communities(
+                self.algos[algo].Z,
+                self.hsbm_model.num_clusters_on_l(layer),
+                self.algos[algo].bottom_communities,
+            )
         return self.hsbm_model.calc_accuracy(
             clustering, layer, calc_acc_algo=mea.calc_accuracy
         )
