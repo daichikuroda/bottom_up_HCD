@@ -91,8 +91,10 @@ def run_time_algo2(algo, *params, **options):
     print(t)
     return C, t
 
+
 def calc_p_from_a(a, N):
     return np.array(a) * np.log(N) / N
+
 
 def smart_assigment(np_array, indexes1, indexes2, assign_value):
     a = np_array[indexes1, :]
@@ -100,8 +102,10 @@ def smart_assigment(np_array, indexes1, indexes2, assign_value):
     np_array[indexes1, :] = a
     return np_array  # no need to return this but for the clarification
 
+
 def select_several_indices_in_list(llist, indices):
     return sum([list(llist[i]) for i in indices], [])
+
 
 def roop_for_converge(func, *params, **options):
     max_roop = options.pop("max_roop", 10)
@@ -153,6 +157,7 @@ def arrange_len_community_bits(community_bits):
     maxl = max([len(cb) for cb in community_bits])
     return [cb + [0] * (maxl - len(cb)) for cb in community_bits]
 
+
 def st_small_to_st(St_small, communities, N=None):
     if N is None:
         N = sum([len(c) for c in communities])
@@ -165,6 +170,7 @@ def st_small_to_st(St_small, communities, N=None):
             St = smart_assigment(St, cl1, cl0, St_small[icl0][icl1])
 
     return St
+
 
 def nx_dendrogram(D, communities, from_community_bits=False):
     n = len(D) + 1  # number of clusters
@@ -291,6 +297,7 @@ def dG_with_distance(dG, logscale=True, resolution=100, last_size=1 / 30):
                 dG2.add_edge(bnn, _n)
     return dG2
 
+
 def create_group_matrix(num_layer, num_child=2):
     group_matrix = np.ones(
         (num_child ** (num_layer - 1), num_child ** (num_layer - 1)), dtype=int
@@ -350,23 +357,26 @@ def clustering_k_communities(
         return_cluster_community_dict=return_cluster_community_dict,
     )
 
+
 def clustering_k_communities_by_similarities(D, k, communities, similarities):
-    n = np.shape(D)[0] + 1  # number of clusters
-    k = min(k, n - 1)
+    # n = np.shape(D)[0] + 1  # number of clusters
+    n = len(communities)
     cluster = {i: communities[i] for i in range(n)}
-    sim_argsorted = list(np.argsort(similarities))[::-1]
+    sim_argsorted = list(np.argsort(similarities))
+    i = 1
     while len(cluster) > k:
-        i = 1
         t = sim_argsorted[-i]
-        while not (int(D[t][0]) in cluster.keys() and int(D[t][1]) in cluster.keys()):
-            i += 1
-            t = sim_argsorted[-i]
-        else:
+        if int(D[t][0]) in cluster.keys() and int(D[t][1]) in cluster.keys():
             t = sim_argsorted.pop(-i)
             cluster[n + t] = np.hstack(
                 (cluster.pop(int(D[t][0])), cluster.pop(int(D[t][1])))
             )
+            i = 1
+        else:
+            i += 1
+
     return list(cluster.values())
+
 
 def simple_ave(X, X0):
     return np.mean(abs(X - X0))
@@ -376,10 +386,68 @@ def l21(X, X0):
     return np.mean(np.sqrt(np.sum((X - X0) ** 2, axis=0)))
 
 
-def drop_edges(G, q, parent_seed=None):
+def drop_edges(G, q, excepts=None, parent_seed=None):
     G2 = G.copy()
     _rng = np.random.default_rng(parent_seed)
-    edges = np.array(G2.edges())
+    edges = np.array(list(set(G2.edges()) - set(excepts)))
     _edges_to_rm = edges[_rng.random(len(edges)) < q]
     G2.remove_edges_from(_edges_to_rm)
+    return G2
+
+
+def add_noise_edges(G, q, only=None, excepts=None, parent_seed=None):
+    G2 = G.copy()
+    _rng = np.random.default_rng(parent_seed)
+    if only is not None:
+        edges = only
+    else:
+        edges = itertools.combinations(G.nodes(), 2)
+    # edges_candidates = np.array(list(set(edges) - set(excepts)))
+    if excepts is None:
+        excepts = []
+    _edges_to_add = []
+    for _e in edges:
+        if (
+            _rng.random() < q
+            and (_e not in excepts)
+            and ((_e[1], _e[0]) not in excepts)
+        ):
+            _edges_to_add.append(_e)
+    G2.add_edges_from(_edges_to_add)
+    return G2
+
+
+def network_from_edgelist(edge_list, weighted=True, add_nodes=None):
+    G = nx.Graph()
+    if add_nodes is not None:
+        G.add_nodes_from(add_nodes)
+    for i, j, w in edge_list:
+        if weighted:
+            G.add_edge(int(i), int(j), weight=w)
+        else:
+            G.add_edge(int(i), int(j))
+    return G
+
+
+def fluctuate_edge_weights(G, sigma, seed=None, weight_convert="log"):
+    _rng = np.random.default_rng(seed)
+    wes = G.edges(data="weight")
+    fluctions = sigma * _rng.standard_normal(len(wes))
+    if weight_convert == "log":
+        wes_new = [
+            (e0, e1, np.log(w + f))
+            for ((e0, e1, w), f) in zip(wes, fluctions)
+            if w + f > 1
+        ]
+    elif weight_convert == "log+1":
+        wes_new = [
+            (e0, e1, np.log(w + f + 1))
+            for ((e0, e1, w), f) in zip(wes, fluctions)
+            if w + f > 0
+        ]
+    else:
+        wes_new = [
+            (e0, e1, w + f) for ((e0, e1, w), f) in zip(wes, fluctions) if w + f > 0
+        ]
+    G2 = network_from_edgelist(wes_new, add_nodes=sorted(G.nodes))
     return G2

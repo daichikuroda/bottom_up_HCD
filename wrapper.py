@@ -88,10 +88,10 @@ class hierarchical_communities:
         self.N = len(G.nodes())
         self.algo = algo
         if nodes_sort:
-            nodes_list = np.array(sorted(G.nodes()))
+            self.nodes_list = np.array(sorted(G.nodes()))
         else:
-            nodes_list = np.array(G.nodes())
-        self.np_A = nx.to_numpy_array(G, nodelist=nodes_list)
+            self.nodes_list = np.array(G.nodes())
+        self.np_A = nx.to_numpy_array(G, nodelist=self.nodes_list)
         if group_name is None:
             self.true_label = None
             self.groups = None
@@ -115,38 +115,38 @@ class hierarchical_communities:
                 metrics.append("small_Stk")
             metrics = list(set(metrics) & metrics_set)
         self.metrics = {met: None for met in metrics}
-        self.e_mapping_for_paris = None
+        self.d_mapping_for_paris = None
         if algo == "rbu" or algo == "bottom_up" or algo == "bottom-up":
             if initial_communities is None and initial_labels is None:
                 self.bottom_label, _zeta_p = cla.community_detection(
-                    G, weighted, increase_maxiter=100, nodelist=nodes_list
+                    G, weighted, increase_maxiter=100, nodelist=self.nodes_list
                 )
                 self.bottom_communities = utild.return_communities(
-                    self.bottom_label, np_nodes=nodes_list
+                    self.bottom_label, np_nodes=self.nodes_list
                 )
             elif initial_labels is not None:
                 self.bottom_communities = utild.return_communities(
-                    initial_labels, np_nodes=nodes_list
+                    initial_labels, np_nodes=self.nodes_list
                 )
                 self.bottom_label = initial_labels
             elif initial_communities is not None:
                 self.bottom_communities = initial_communities
                 self.bottom_label = utild.communities_to_label(
-                    self.bottom_communities, nodes_list=nodes_list
+                    self.bottom_communities, nodes_list=self.nodes_list
                 )
             self.Z = rec.bottom_up(
                 G,
                 self.bottom_label,
                 linkage_algo="update_each",
                 weighted=weighted,
-                nodelist=nodes_list,
+                nodelist=self.nodes_list,
             )
             self.label = self.bottom_label
             self.communities = self.bottom_communities
         elif algo == "rbp" or algo == "top_down" or algo == "top-down":
             if initial_labels is not None:
                 initial_communities = utild.return_communities(
-                    initial_labels, np_nodes=nodes_list
+                    initial_labels, np_nodes=self.nodes_list
                 )
             (self.bottom_communities, self.community_bits,) = rec.recursive_bipartion(
                 G,
@@ -156,27 +156,33 @@ class hierarchical_communities:
             )
             self.Z = spect.linkage_for_recursive_algo(self.community_bits)
             self.bottom_label = utild.communities_to_label(
-                self.bottom_communities, nodes_list=nodes_list
+                self.bottom_communities, nodes_list=self.nodes_list
             )
             self.similarities = mea.calc_similarities_for_top_down(
-                self.np_A, self.Z, self.bottom_communities, nodes_list=nodes_list
+                self.np_A, self.Z, self.bottom_communities, nodes_list=self.nodes_list
             )
             self.label = self.bottom_label
             self.communities = self.bottom_communities
         elif algo == "paris":
             # in bayesian the node number should be consecutive from 0
             graph_num_convert = (
-                nodes_list[0] != 0 or nodes_list[-1] != len(nodes_list) - 1
+                self.nodes_list[0] != 0
+                or self.nodes_list[-1] != len(self.nodes_list) - 1
             )
             if graph_num_convert:
-                self.e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
-                self.d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
+                self.e_mapping_for_paris = dict(
+                    zip(self.nodes_list, range(len(self.nodes_list)))
+                )
+                self.d_mapping_for_paris = dict(
+                    zip(range(len(self.nodes_list)), self.nodes_list)
+                )
                 G2 = nx.relabel_nodes(G, self.e_mapping_for_paris)
             else:
                 G2 = G
             self.Z = paris(G2)
-            self.bottom_communities = nodes_list.reshape((self.N, 1))
+            self.bottom_communities = self.nodes_list.reshape((self.N, 1))
             self.communities = utils.best_clustering(self.Z, 0)
+            print(len(self.communities))
             if graph_num_convert:
                 self.communities = [
                     np.array([self.d_mapping_for_paris[n] for n in c])
@@ -184,17 +190,22 @@ class hierarchical_communities:
                 ]
 
             self.label = utild.communities_to_label(
-                self.communities, nodes_list=nodes_list
+                self.communities, nodes_list=self.nodes_list
             )
 
         elif algo == "bayesian":
             # in bayesian the node number should be consecutive from 0
             graph_num_convert = (
-                nodes_list[0] != 0 or nodes_list[-1] != len(nodes_list) - 1
+                self.nodes_list[0] != 0
+                or self.nodes_list[-1] != len(self.nodes_list) - 1
             )
             if graph_num_convert:
-                e_mapping_for_paris = dict(zip(nodes_list, range(len(nodes_list))))
-                d_mapping_for_paris = dict(zip(range(len(nodes_list)), nodes_list))
+                e_mapping_for_paris = dict(
+                    zip(self.nodes_list, range(len(self.nodes_list)))
+                )
+                d_mapping_for_paris = dict(
+                    zip(range(len(self.nodes_list)), self.nodes_list)
+                )
                 G2 = nx.relabel_nodes(G, e_mapping_for_paris)
             else:
                 G2 = G
@@ -206,7 +217,7 @@ class hierarchical_communities:
                 G2,
                 deg_corr=deg_corr,
                 weighted=weighted,
-                np_nodes=np.array(nodes_list),
+                np_nodes=np.array(self.nodes_list),
                 edge_distribution=edge_distribution,
             )
             self.Z = spect.linkage_for_recursive_algo(self.community_bits)
@@ -222,7 +233,7 @@ class hierarchical_communities:
                 self.Z, self.num_communities, self.bottom_communities
             )
             self.labelk = utild.communities_to_label(
-                self.communitiesk, nodes_list=nodes_list
+                self.communitiesk, nodes_list=self.nodes_list
             )
 
     def est_k(self):
@@ -366,3 +377,27 @@ class community_detections:
         return self.hsbm_model.calc_accuracy(
             clustering, layer, calc_acc_algo=mea.calc_accuracy
         )
+
+    def calc_ami_on_l(self, algo, layer, rbp_with_sim=False):
+        if algo in ["rbp", "top-down", "top_down"] and rbp_with_sim:
+            clustering = utild.clustering_k_communities_by_similarities(
+                self.algos[algo].Z,
+                self.hsbm_model.num_clusters_on_l(layer),
+                self.algos[algo].bottom_communities,
+                self.algos[algo].similarities,
+            )
+        else:
+            clustering = utild.clustering_k_communities(
+                self.algos[algo].Z,
+                self.hsbm_model.num_clusters_on_l(layer),
+                self.algos[algo].bottom_communities,
+            )
+        label_on_l = utild.communities_to_label(
+            clustering, nodes_list=self.algos[algo].nodes_list
+        )
+        similarity = layer
+        true_clustering_on_l = self.hsbm_model.true_clustering(similarity)
+        true_label_on_l = utild.communities_to_label(
+            true_clustering_on_l, nodes_list=self.hsbm_model.nodelist
+        )
+        return adjusted_mutual_info_score(true_label_on_l, label_on_l)

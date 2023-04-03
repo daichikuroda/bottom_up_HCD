@@ -111,10 +111,10 @@ def Sts_P(
             return_cluster=True,
             return_cluster_community_dict=True,
         )
-        t = max(0, np.shape(D)[0] - len(communities) + 1)
+        t0 = max(0, np.shape(D)[0] - len(communities) + 1)
         n = np.shape(D)[0] + 1  # number of clusters
     else:
-        t = 0
+        t0 = 0
         n = np.shape(D)[0] + 1  # number of clusters
         cluster = {i: [i] for i in range(n)}
         cluster_com = {i: list(c) for i, c in enumerate(communities)}
@@ -130,7 +130,7 @@ def Sts_P(
         P_matrix = np.zeros(np_A.shape)
         for _c in cluster_com.values():
             P_matrix = fill_P(P_matrix, _c, _c)
-        for t in range(t, n - 1):
+        for t in range(t0, n - 1):
             c0 = int(D[t][0])
             c1 = int(D[t][1])
             oc0 = cluster.pop(c0)
@@ -155,6 +155,72 @@ def Sts_P(
         )
     St = utild.st_small_to_st(St_small, communities)
     return St, St_small, P_matrix
+
+
+def calc_cost(np_A, coms):
+    S = sum([len(_c) for _c in coms])
+    return S * np.sum(
+        [
+            np.sum(np_A[coms[i], :][:, coms[j]])
+            for i in range(len(coms))
+            for j in range(i + 1, len(coms))
+        ]
+    )
+
+
+def calc_tree_cost(np_A, D, communities, maxk=None):
+    n = len(communities)  # number of clusters
+    communities = [list(_c) for _c in communities]
+    cluster = {i: _c for (i, _c) in zip(range(n), communities)}
+    if maxk is None:
+        maxk = n - 1
+    if len(communities) != n:
+        raise ValueError("the number of communities does not match")
+    else:
+        cost = int(
+            np.sum(
+                [
+                    (
+                        len(com)
+                        * (
+                            np.sum(np_A[:, com][com, :])
+                            - np.sum(np.diag(np_A[:, com][com, :]))
+                        )
+                        / 2
+                    )
+                    for com in communities
+                ]
+            )
+        )
+        print(cost)
+        t = 0
+        while t <= maxk - 1:
+            dist = D[t][2]
+            t2 = t
+            com_t = {}
+            print(t2)
+            while D[t2][2] == dist:
+                ic0 = int(D[t2][0])
+                ic1 = int(D[t2][1])
+                comt2 = []
+                for ic in (ic0, ic1):
+                    if ic in com_t.keys():
+                        comt2 += com_t.pop(ic)
+                    else:
+                        comt2.append(cluster[ic])
+                com_t[n + t2] = comt2
+                t2 += 1
+                if t2 >= maxk:
+                    break
+            for t3 in range(t, t2):
+                cluster[n + t3] = cluster.pop(int(D[t3][0])) + cluster.pop(
+                    int(D[t3][1])
+                )
+            c = calc_cost(np_A, com_t[min(n + t2 - 1, n + maxk)])
+            print(min(n + t2 - 1, n + maxk), c)
+            cost += c
+            t = t2
+    return cost
 
 
 def calc_standrized_square_error_from_matrixes(matrix_est, matrix_true):
