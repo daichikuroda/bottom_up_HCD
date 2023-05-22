@@ -13,13 +13,13 @@ This codes depends on follwing codes:
 - geopandas (plotting military dataset)
 
 
-- Paris codes (inside ./Paris/paris_codes/) are obtained from https://github.com/tbonald/paris.
-- Beth-Hessian codes (files 'beth_hessian.py' and 'generic_functions.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/.
-
+- Paris codes (inside ./Paris/paris_codes/) are obtained from https://github.com/tbonald/paris. This method is introduced in [Hierarchical Graph Clustering using Node Pair Sampling](http://arxiv.org/abs/1806.01664).
+- Beth-Hessian codes (files 'beth_hessian.py' and 'generic_functions.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [Hierarchical block structures and high-resolution model selection in large networks](https://doi.org/10.1103/PhysRevX.4.011047).
 :::
 Note that graph tool sometimes conflicts with other libraries.
 In our conda enviroment, graph tool and graphciz_layout cannot be used at the same time.
 :::
+- Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Markov Dynamics as a Zooming Lens for Multiscale Community Detection: Non Clique-Like Communities and the Field-of-View Limit](https://doi.org/10.1371/journal.pone.0032210).
 
 ## Getting Started
 ### aliases

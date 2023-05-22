@@ -16,6 +16,7 @@ import scipy.sparse as sp
 import scipy.linalg as splinalg
 
 import utild
+import recursive as rec
 
 legend_font_size = 18
 tick_size = 18
@@ -137,6 +138,7 @@ def plot_dendrogram(
     color_threshold=0,
     above_threshold_color="k",
     resize=True,
+    allow_negative=False,
 ):
     if resize:
         plt.figure(figsize=(25, 10))
@@ -145,14 +147,18 @@ def plot_dendrogram(
         Dlog[:, 2] = np.log(Dlog[:, 2])
         Dlog[1:, 2] = Dlog[1:, 2] - Dlog[1, 2]
         Dlog[0, 2] = 0
+    if allow_negative:
+        plotdend = plot_dendrogram_allow_negative
+    else:
+        plotdend = sch.dendrogram
     if color_threshold is None and above_threshold_color is None:
-        sch.dendrogram(
+        plotdend(
             Dlog,
             leaf_rotation=90.0,
             # link_color_func=(1, 1, 1),
         )
     else:
-        sch.dendrogram(
+        plotdend(
             Dlog,
             leaf_rotation=90.0,
             color_threshold=color_threshold,
@@ -163,6 +169,47 @@ def plot_dendrogram(
     if save_path:
         plt.savefig(save_path)
     plt.show()
+
+
+def plot_dendrogram_allow_negative(Z, **kwargs):
+    Z2 = Z.copy()
+    min_dist = np.min(Z2[:, 2])
+    Z2[:, 2] += abs(min_dist)
+
+    def llf(id):
+        if id < len(Z2):
+            return str(id)
+        else:
+            return str(Z2[id - len(Z2), 2] - abs(min_dist))
+
+    return sch.dendrogram(Z2, leaf_label_func=llf, **kwargs)
+
+def plot_dendrogram_with_sim(
+    D,
+    similarities,
+    logscale=True,
+    save_path=False,
+    color_threshold=0,
+    above_threshold_color="k",
+    resize=True,
+    allow_negative=False,
+    dist_func="invert",
+):
+    if dist_func == "invert":
+        dist = rec.invert(np.array(similarities))
+    else:
+        dist = rec.subtraction_from_1(np.array(similarities))
+    D2 = D.copy()
+    D2[:, 2] = dist
+    plot_dendrogram(
+        D2,
+        logscale=logscale,
+        save_path=save_path,
+        color_threshold=color_threshold,
+        above_threshold_color=above_threshold_color,
+        resize=resize,
+        allow_negative=allow_negative,
+    )
 
 
 def plot_dendrogram_from_group_matrix(
@@ -202,6 +249,10 @@ def plot_for_recur_clustering(
     height=8,
     node_size=1,
     edge_width=10,
+    similarities=None,
+    with_title=True,
+    alpha=0.1,
+    node_linew=0.1,
 ):
 
     plt.rcParams.update({"font.size": 13})
@@ -209,17 +260,34 @@ def plot_for_recur_clustering(
     # plt.subplots_adjust(
     #     left=0.02, right=0.98, bottom=0.06, top=0.85, wspace=0.05, hspace=0.05
     # )
-    clustering = clustering_point(rbp, k, communities)
+    if (
+        clustering_point == utild.clustering_k_communities_by_similarities
+        and similarities is not None
+    ):
+        if similarities is None:
+            print(
+                "similarities are not provided. Therefore normal clustering point is used."
+            )
+        clustering = utild.clustering_k_communities_by_similarities(
+            rbp, k, communities, similarities
+        )
+    else:
+        clustering = clustering_point(rbp, k, communities)
     length = [len(c) for c in clustering]
     index = np.argsort(-np.array(length))
     plt.subplot(1, 1, 1)
     plt.axis("off")
-    plt.title("k: " + str(k) + "\n(#clusters=" + str(len(clustering)) + ")")
+    if with_title:
+        plt.title("k: " + str(k) + "\n(#clusters=" + str(len(clustering)) + ")")
     draw_nodes = nx.draw_networkx_nodes(
-        G, pos, node_size=node_size, linewidths=node_size * 0.01, node_color="w"
+        G,
+        pos,
+        node_size=node_size,
+        linewidths=node_linew * node_size,
+        node_color="w",  # node_size * 0.01,
     )
     draw_nodes.set_edgecolor("k")
-    nx.draw_networkx_edges(G, pos, width=edge_width, alpha=0.1, edge_color="gray")
+    nx.draw_networkx_edges(G, pos, width=edge_width, alpha=alpha, edge_color="gray")
     nodes = list(G.nodes())
     for l in range(min(len(clustering), len(utild.colors))):
         nodelist = clustering[index[l]]  # [nodes[i] for i in clustering[index[l]]]
@@ -227,7 +295,7 @@ def plot_for_recur_clustering(
             G,
             pos,
             node_size=node_size,
-            linewidths=node_size * 0.01,
+            linewidths=node_linew * node_size,
             nodelist=nodelist,
             node_color=utild.colors[l],
         )
