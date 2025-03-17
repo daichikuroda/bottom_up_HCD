@@ -56,6 +56,7 @@ calc_funcs = {
     "ari": adjusted_rand_score,
 }
 
+
 # nodes are expected to be labeled as 0,1,2,...,N
 # in Z the cluster number is consecutive number starting from 0
 class hierarchical_communities:
@@ -119,7 +120,11 @@ class hierarchical_communities:
         if algo == "rbu" or algo == "bottom_up" or algo == "bottom-up":
             if initial_communities is None and initial_labels is None:
                 self.bottom_label, _zeta_p = cla.community_detection(
-                    G, weighted, increase_maxiter=100, nodelist=self.nodes_list
+                    G,
+                    weighted,
+                    increase_maxiter=100,
+                    nodelist=self.nodes_list,
+                    n_clusters=self.num_communities,
                 )
                 self.bottom_communities = utild.return_communities(
                     self.bottom_label, np_nodes=self.nodes_list
@@ -148,7 +153,10 @@ class hierarchical_communities:
                 initial_communities = utild.return_communities(
                     initial_labels, np_nodes=self.nodes_list
                 )
-            (self.bottom_communities, self.community_bits,) = rec.recursive_bipartion(
+            (
+                self.bottom_communities,
+                self.community_bits,
+            ) = rec.recursive_bipartion(
                 G,
                 partion_algo=spect.regularized_spectral,
                 stopping_rule=spect.stop_bethe_hessian,

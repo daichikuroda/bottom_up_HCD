@@ -10,7 +10,7 @@ import utild
 def spectral(G, k=20):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G)
+    A = nx.adjacency_matrix(G)
     deg = sp.csr_matrix.dot(A, np.ones(n))
     D = sp.diags(deg)
     L = D - A

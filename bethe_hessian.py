@@ -10,13 +10,20 @@ import networkx as nx
 import sys
 from sklearn.cluster import KMeans
 from scipy.sparse import coo_matrix, bmat
+
+import sys
+
+parent_codef = "/home/indy-stg3/user2/bottom_up_hierarchical/"
+sys.path += [
+    "./Unified_framework_codes/Package/",
+    parent_codef + "Unified_framework_codes/Package/",
+]  ### Specify the directory where the Package is
 from generic_functions import *
 
 ######################################################################################################################################
 
 
 def find_sol(S, M, r, eps):
-
     """Function that solves Equation 24 through dicotomy
     Use :
         rp = find_sol(S, M, r)
@@ -34,7 +41,6 @@ def find_sol(S, M, r, eps):
     r_old = r_large
 
     while err > eps:
-
         r_new = (r_small + r_large) / 2
         err = np.abs(r_old - r_new)
 
@@ -45,7 +51,6 @@ def find_sol(S, M, r, eps):
         if v > (r - r_new) * (1 + r * r_new):  # update the boundaries
             r_small = r_new
         else:
-
             r_large = r_new
 
         r_old = r_new
@@ -57,7 +62,6 @@ def find_sol(S, M, r, eps):
 
 
 def find_rho_B(A):
-
     """Function that computes rho(B)
     Use :
         rho = find_rho_B(A)
@@ -68,7 +72,7 @@ def find_rho_B(A):
     """
 
     n = np.shape(A)[0]  # size of the network
-    d = np.array(np.sum(A, axis=0))[0]  # degree vector
+    d = np.array(np.sum(A, axis=0))  # degree vector
     D = scipy.sparse.diags(d, offsets=0)  # degree matrix
     I = scipy.sparse.diags(np.ones(n), offsets=0)  # identity matrix
     M = scipy.sparse.bmat([[A, I - D], [I, None]], format="csr")  # matrix B'
@@ -82,7 +86,6 @@ def find_rho_B(A):
 
 
 def find_zeta(A, rho, n_clusters, eps, increase_maxiter=False):
-
     """Function that calculates the vector zeta on a connected network A given k as zeta_p = min_{r > 1} {r : s_p(H_r) = 0}
     Use :
         zeta_v, Y = find_zeta(A, rho, n_clusters, eps)
@@ -96,7 +99,7 @@ def find_zeta(A, rho, n_clusters, eps, increase_maxiter=False):
         Y (array of size n x k) : matrix containing the informative eigenvectors on which k-means whould be performed
     """
 
-    d = np.array(np.sum(A, axis=0))[0]  # degree vector
+    d = np.array(np.sum(A, axis=0))  # degree vector
     n = len(d)  # size of the network
     D = scipy.sparse.diags(d, offsets=0)  # degree matrix
     I = scipy.sparse.diags(np.ones(n), offsets=0)  # identity matrix
@@ -106,13 +109,11 @@ def find_zeta(A, rho, n_clusters, eps, increase_maxiter=False):
     i = n_clusters
 
     while i > 1:
-
         delta = 1
         OUT = "Estimating zeta : " + str(i).zfill(2)
         sys.stdout.write("\r%s" % OUT)
 
         while delta > eps:  # iterate while r*-r is smaller than eps
-
             H = (r**2 - 1) * I + D - r * A  # Bethe-Hessian
             try:
                 v, X = scipy.sparse.linalg.eigsh(
@@ -163,8 +164,15 @@ class ReturnValue:
         self.zeta_v = zeta_p
 
 
-def community_detection(G, weighted=False, increase_maxiter=False, nodelist=None, *args, **kwargs):
-
+def community_detection(
+    G,
+    weighted=False,
+    increase_maxiter=False,
+    nodelist=None,
+    inputA=False,
+    *args,
+    **kwargs
+):
     """Function to perform community detection on a graph with n nodes and k communities according to Algorithm 2
     Use :
         cluster = community_detection(A, **kwargs)
@@ -185,22 +193,25 @@ def community_detection(G, weighted=False, increase_maxiter=False, nodelist=None
         cluster.zeta_v (array of size k) : vector containing the values of zeta_p
 
     """
-    if weighted:
-        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+    if inputA:
+        A = G
+    elif weighted:
+        # A = nx.to_scipy_sparse_array(G, nodelist=nodelist)
+        A = nx.adjacency_matrix(G, nodelist=nodelist)
     else:
-        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist, weight=None)
+        # A = nx.to_scipy_sparse_array(G, nodelist=nodelist, weight=None)
+        A = nx.adjacency_matrix(G, nodelist=nodelist, weight=None)
     n_max = kwargs.get("n_max", 10**3)  # there is max
     real_classes = kwargs.get("real_classes", [None])
     n_clusters = kwargs.get("n_clusters", None)
     eps = kwargs.get("eps", np.finfo(float).eps)
     projection = kwargs.get("projection", True)
 
-    d = np.array(np.sum(A, axis=0))[0]  # degree vector
+    d = np.array(A.sum(axis=0))  # degree vector
     n = len(d)  # size of the network
     rho = find_rho_B(A)  # r = rho(B)
 
     if n_clusters == None:  # it the number of clusters is not known, we estimate it
-
         n_clusters = 1
         D_rho_05 = scipy.sparse.diags(
             (d + (rho - 1) * np.ones(n)) ** (-1 / 2), offsets=0
@@ -212,7 +223,10 @@ def community_detection(G, weighted=False, increase_maxiter=False, nodelist=None
         while flag == 0:
             if n_clusters < n_max:  # the algo will not find more than n_max clusters
                 vrho = scipy.sparse.linalg.eigsh(
-                    L_rho, k=n_clusters + 1, which="LA", return_eigenvectors=False
+                    L_rho,
+                    k=n_clusters + 1,
+                    which="LA",
+                    return_eigenvectors=False,
                 )  # largest eigenvalues of L_tau
                 if (
                     min(vrho) > 1 / np.sqrt(rho) + np.finfo(float).eps
@@ -237,7 +251,6 @@ def community_detection(G, weighted=False, increase_maxiter=False, nodelist=None
             increase_maxiter=increase_maxiter,
         )  # find the zeta vector and  the corresponding informative  matrix
         if projection == True:
-
             for i in range(n):
                 # if not np.all(X[i] == [0.0]):  # to handle the case divided by 0
                 #     X[i] = X[i] / np.sqrt(np.sum(X[i] ** 2))  # normalize the rows  of X

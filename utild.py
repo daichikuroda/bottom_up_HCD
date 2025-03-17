@@ -92,6 +92,16 @@ def run_time_algo2(algo, *params, **options):
     return C, t
 
 
+def lca_to_distance_matrix(lca_matrix):
+    lca_matrix = np.array(lca_matrix)
+    # Calculate the depth of each leaf node from the root
+    depths = np.max(lca_matrix, axis=0)
+    # Calculate the distance between each pair of nodes
+    tree_distance_matrix = np.add.outer(depths, depths) - 2 * lca_matrix
+
+    return tree_distance_matrix
+
+
 def calc_p_from_a(a, N):
     return np.array(a) * np.log(N) / N
 
@@ -451,3 +461,39 @@ def fluctuate_edge_weights(G, sigma, seed=None, weight_convert="log"):
         ]
     G2 = network_from_edgelist(wes_new, add_nodes=sorted(G.nodes))
     return G2
+
+
+def return_supercoms(Z, bottom_communities):
+    num_bottom = len(bottom_communities)
+    supercoms = {
+        (iz + num_bottom): [
+            [int(_i) for _i in z[:2]],
+            [int(_i) for _i in z[:2]],
+            [iz + num_bottom],
+            z[2],
+        ]
+        for iz, z in enumerate(Z)
+    }
+    potential_merges = []
+    for iz, z in supercoms.items():
+        zaa = []
+        for c in z[0]:
+            if c >= num_bottom:
+                zaa += supercoms[c][1]
+                potential_merges.append((iz, c))
+            else:
+                zaa.append(c)
+        supercoms[iz][1] = zaa
+    return supercoms, potential_merges
+
+
+def supercoms_to_community_bits(supercoms):
+    if len(supercoms) == 0:
+        return []
+    cbs = [[b] for b in np.sort(supercoms[max(supercoms.keys())][1])]
+    num_b = len(cbs)
+    for js, s in enumerate(list(supercoms.values())[:-1]):  # the last one is the root
+        for ss in s[1]:
+            cbs[ss].append(js + num_b)
+    cbs = [cb[::-1] for cb in cbs]
+    return cbs

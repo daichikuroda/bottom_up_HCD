@@ -32,9 +32,6 @@ def simulate(
         "err_St",
         "ami",
         "ari",
-        # "err_St_old",
-        # "ave_St_err",
-        # "ave_P_err",
     ]
 
     algos = ["rbu", "rbp", "paris"]

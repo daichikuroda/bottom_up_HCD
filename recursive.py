@@ -139,9 +139,11 @@ def similarity(G, label, sim_algo=similarity_between):
 
 
 def condensed_distance_similarity(
-    G, label, sim_algo=similarity_between, weighted=False, nodelist=None
+    G, label, sim_algo=similarity_between, weighted=False, nodelist=None, inputA=False
 ):
-    if weighted:
+    if inputA:
+        A = G
+    elif weighted:
         A = nx.to_numpy_array(G, nodelist=nodelist)
     else:
         A = nx.to_numpy_array(G, weight=None, nodelist=nodelist)
@@ -231,14 +233,22 @@ def bottom_up(
     nodelist=None,
     sim_algo=similarity_between,
     linkage_algo="update_each",
-    sim_to_distance=subtraction_from_1,
+    sim_to_distance=None,
     weighted=False,
+    inputA=False,
 ):
-    if weighted:
+    if weighted and sim_to_distance is None:
         sim_to_distance = invert
+    elif sim_to_distance is None:
+        sim_to_distance = subtraction_from_1
     if linkage_algo == "linkage":
         similarities = condensed_distance_similarity(
-            G, bottom_label, sim_algo=sim_algo, weighted=weighted, nodelist=nodelist
+            G,
+            bottom_label,
+            sim_algo=sim_algo,
+            weighted=weighted,
+            nodelist=nodelist,
+            inputA=inputA,
         )
         y = sim_to_distance(similarities)
         return sch.linkage(y, method="single")
@@ -249,6 +259,7 @@ def bottom_up(
             sim_algo=similarity_between2,
             weighted=weighted,
             nodelist=nodelist,
+            inputA=inputA,
         )
         community_sizes = [np.sum(bottom_label == l) for l in np.unique(bottom_label)]
         return linkage_update_sim_each2(

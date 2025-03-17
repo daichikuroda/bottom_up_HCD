@@ -7,6 +7,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+import itertools as it
 
 # from scipy.cluster.hierarchy import dendrogram
 import scipy.cluster.hierarchy as sch
@@ -19,7 +20,7 @@ import scipy.linalg as splinalg
 import utild
 
 
-def _make_cost_m(cm):
+def make_cost_m(cm):
     s = np.max(cm)
     return -cm + s
 
@@ -35,31 +36,45 @@ def make_confusion_matrix(true_clustering, estimated_clustering):
 
 # https://smorbieu.gitlab.io/accuracy-from-classification-to-clustering-evaluation/#:~:text=Computing%20accuracy%20for%20clustering%20can,the%20accuracy%20for%20clustering%20results.
 # https://en.wikipedia.org/wiki/Hungarian_algorithm
-def calc_accuracy(estimated_clustering, true_clustering, N=None, from_clusterings=True):
-    if N is None:
-        N = sum([len(c) for c in true_clustering])
+def calc_accuracy(
+    estimated_clustering,
+    true_clustering,
+    N=None,
+    from_clusterings=True,
+    different_size=False,
+):
     if from_clusterings is True:
         # predicted_labels = utild.communities_to_label_general(estimated_clustering)
         # labels = utild.communities_to_label_general(true_clustering)
         cm = make_confusion_matrix(true_clustering, estimated_clustering)
+        if N is None:
+            N = sum([len(c) for c in true_clustering])
     else:
         predicted_labels = estimated_clustering
         labels = true_clustering
         cm = confusion_matrix(labels, predicted_labels)
-    indexes = linear_assignment(_make_cost_m(cm))
-    js = [e[1] for e in zip(*sorted(indexes, key=lambda x: x[0]))]
-    cm2 = cm[:, js]
+        if N is None:
+            N = len(true_clustering)
+    indexes = linear_assignment(make_cost_m(cm))
+    if different_size:
+        cm2 = cm[indexes[0], :][:, indexes[1]]
+    else:
+        js = [e[1] for e in zip(*sorted(indexes, key=lambda x: x[0]))]
+        cm2 = cm[:, js]  # sometimes this causes some errors
     return np.trace(cm2) / N, indexes, cm, cm2
 
 
-def cb_similarity(xs, ys):
+def cb_similarity(xs, ys, minus_one=True):
     s = 0
     for i, (x, y) in enumerate(zip(xs, ys)):
         if x == y:
             s += 1
         elif x != y:
             break
-    return s - 1
+    if minus_one:
+        return s - 1
+    else:
+        return s
 
 
 def cb_distance(xs, ys):
@@ -264,3 +279,83 @@ def calc_similarities_for_top_down(A, D, bottom_communities, nodes_list=None):
 
 def calc_old_err_St(matrix_est, matrix_true):
     return calc_standrized_square_error_from_matrixes(matrix_est + 1, matrix_true + 1)
+
+
+def calc_corref_in_D(
+    true_D,
+    est_D,
+    true_clustering,
+    estimated_clustering,
+    cm=None,
+    N=None,
+):
+    if N is None:
+        N = sum([len(c) for c in true_clustering])
+    true_D = np.array(true_D)
+    est_D = np.array(est_D)
+    if cm is None:
+        cm = make_confusion_matrix(true_clustering, estimated_clustering)
+
+    true_v_per_c = np.array([len(c) for c in true_clustering])
+    est_v_per_c = np.array([len(c) for c in estimated_clustering])
+    true_gamma_outer = np.outer(true_v_per_c, true_v_per_c)
+    est_gamma_outer = np.outer(est_v_per_c, est_v_per_c)
+    ave_d = np.sum(true_gamma_outer * true_D) / (N**2)
+    ave_d_hat = np.sum(est_gamma_outer * est_D) / (N**2)
+    ave_d2 = np.sum(true_gamma_outer * true_D**2) / (N**2)
+    ave_d_hat2 = np.sum(est_gamma_outer * est_D**2) / (N**2)
+    ave_d_d_hat = np.sum(
+        [
+            np.sum(np.outer(cm[t1, :], cm[t2, :]) * est_D) * true_D[t1, t2]
+            for t1, t2 in it.product(range(len(true_clustering)), repeat=2)
+        ]
+    ) / (N**2)
+    corref_in_D = (ave_d_d_hat - ave_d * ave_d_hat) / (
+        np.sqrt(ave_d2 - ave_d**2) * np.sqrt(ave_d_hat2 - ave_d_hat**2)
+    )
+    return corref_in_D
+
+
+def depth_lcas(community_bits, return_dict=True, ignore_path=False, self_return=False):
+    if return_dict and self_return and len(community_bits) >= 1:
+        return {
+            (bi, bj): cb_similarity(
+                community_bits[bi], community_bits[bj], minus_one=False
+            )
+            for bi, bj in it.combinations_with_replacement(
+                range(len(community_bits)), 2
+            )
+        }
+    elif return_dict and self_return and len(community_bits) == 0:
+        return {(0, 0): 0}
+    elif return_dict:
+        return {
+            (bi, bj): cb_similarity(
+                community_bits[bi], community_bits[bj], minus_one=False
+            )
+            for bi, bj in it.combinations(range(len(community_bits)), 2)
+        }
+    else:
+        if ignore_path:
+            com_bits = np.array(com_bits)
+            tree_set = []
+            for comb in com_bits.T:
+                _, scoms = utild.unique_wt_all_indices_simple(comb)
+                tree_set += [tuple(c) for c in scoms]
+            tree_set += [tuple(com_bits.T[-1])]
+            tree_set = [list(c) for c in set(tree_set)]
+            import tree_list_up as tlu
+
+            return tlu.tree_to_matrix(tree_set)
+        else:
+            return np.array(
+                [
+                    [
+                        cb_similarity(
+                            community_bits[bi], community_bits[bj], minus_one=False
+                        )
+                        for bj in range(len(community_bits))
+                    ]
+                    for bi in range(len(community_bits))
+                ]
+            )

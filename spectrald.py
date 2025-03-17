@@ -46,7 +46,7 @@ def return_Lsym(W, d):
 def spectral_bup(G, k=20, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+    A = nx.adjacency_matrix(G, nodelist=nodelist)
     deg = sp.csr_matrix.dot(A, np.ones(n))
     D = sp.diags(deg)
     L = D - A
@@ -64,7 +64,7 @@ def spectral_bup(G, k=20, nodelist=None):
 def spectral_normalized_laplacian_bup(G, k=20, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+    A = nx.adjacency_matrix(G, nodelist=nodelist)
     Lrw = return_Lrw(A)
     lam, V = eigsh(
         Lrw,
@@ -84,7 +84,7 @@ def spectral_normalized_laplacian_bup(G, k=20, nodelist=None):
 def spectral(G, k=2, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+    A = nx.adjacency_matrix(G, nodelist=nodelist)
     deg = sp.csr_matrix.dot(A, np.ones(n))
     D = sp.diags(deg)
     L = D - A
@@ -102,7 +102,7 @@ def spectral(G, k=2, nodelist=None):
 def spectral_normalized_laplacian(G, k=2, nodelist=None):
     # Laplacian matrix
     n = len(G.nodes())
-    A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+    A = nx.adjacency_matrix(G, nodelist=nodelist)
     Lrw = return_Lrw(A)
     lam, V = eigsh(
         Lrw,
@@ -145,9 +145,7 @@ def stopping_rule2015(G, k=2):
             ]
         )
         vals = eigs(Bnb, min(k, n - 1), which="LR", return_eigenvectors=False)
-        vals2 = eigs(
-            Bnb, min(k, n - 1), which="SR", return_eigenvectors=False
-        ) 
+        vals2 = eigs(Bnb, min(k, n - 1), which="SR", return_eigenvectors=False)
         vals = np.unique(list(vals) + list(vals2))
         if len(vals) < k:
             to_continue = False
@@ -168,6 +166,7 @@ def linkage_for_recursive_algo(community_bits):
         community_bits = utild.arrange_len_community_bits(community_bits)
         return sch.linkage(community_bits, method="single", metric=mea.cb_distance)
 
+
 # =============================================================================
 # For bethe Hessian
 # =============================================================================
@@ -176,9 +175,9 @@ def linkage_for_recursive_algo(community_bits):
 def betheHessian(G, r=None, weighted=False, nodelist=None):
     n = len(G.nodes())
     if weighted:
-        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist)
+        A = nx.adjacency_matrix(G, nodelist=nodelist)
     else:
-        A = nx.to_scipy_sparse_matrix(G, nodelist=nodelist, weight=None)
+        A = nx.adjacency_matrix(G, nodelist=nodelist, weight=None)
     degrees = A.sum(axis=0, dtype=float)
     if r == None:
         d = np.array(degrees)

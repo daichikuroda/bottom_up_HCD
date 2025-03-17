@@ -52,7 +52,7 @@ def simulate(
         "ami",
         "ari",
     ]
-    algos = ["rbu", "rbp", "paris"]
+    algos = ["rbu", "rbp"]
 
     a_list = a_last * beta ** (np.arange(0, num_layer))[::-1]
     edge_densities = utild.calc_p_from_a(a_list, N)
@@ -146,11 +146,11 @@ def simulate(
 
 if __name__ == "__main__":
     arg = sys.argv
+    # arg = ["", 0.2, 30, "example1", 100]
     beta = float(arg[1])
     a_last = float(arg[2])
     tree_shape = arg[3]
     num_nodes_unit = int(arg[4])
-    # tree_type = arg[5]  # merge / equal
     print("Simulation started at ", time.asctime(time.localtime()))
     simulate(
         a_last,
