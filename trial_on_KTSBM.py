@@ -17,10 +17,7 @@ def simulate(
     beta,
     num_nodes=200,
     num_layer=5,
-    parent_seed=13,
-    num_samples=10,
     num_child=2,
-    stopping_rule="stop_bethe_hessian",
 ):
 
     num_true_communities = num_child ** (num_layer - 1)
@@ -80,6 +77,7 @@ def simulate(
 
 if __name__ == "__main__":
     arg = sys.argv
+    # arg = ["", 0.5, 50, 100, 4, 2]
     beta = float(arg[1])
     a_last = int(arg[2])
     num_nodes = int(arg[3])
@@ -92,6 +90,5 @@ if __name__ == "__main__":
         num_nodes=num_nodes,
         num_layer=num_layer,
         num_child=num_child,
-        stopping_rule="stop_bethe_hessian",
     )
     print("Simulation ended at ", time.asctime(time.localtime()))

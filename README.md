@@ -50,6 +50,16 @@ For example,
 $ python3 trial_on_unbalanced.py 0.3 64 example1 100
 ```
 
+### Robustness of linkage to misculstering errors
+#### Type of errors and tree recovery rate without graph split
+robustness_bu_bh.py
+
+#### Tree recovery rate with graph split
+robustness_bu_bh_graph_split.py
+
+#### Confusion matrix
+robustness_bu_bh_plot.py
+
 ### Trying on real datasets
 #### High shool dataset
 highschool.py
