@@ -1,7 +1,7 @@
 # bottom-up hierarchical community detection algorithm
 
 ## Dependency
-This codes depends on follwing codes:
+This codes depends on follwing codes:https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37
 - networkx
     - graphviz_layout
 - scipy
@@ -20,6 +20,8 @@ Note that graph tool sometimes conflicts with other libraries.
 In our conda enviroment, graph tool and graphciz_layout cannot be used at the same time.
 :::
 - Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Markov Dynamics as a Zooming Lens for Multiscale Community Detection: Non Clique-Like Communities and the Field-of-View Limit](https://doi.org/10.1371/journal.pone.0032210).
+- Military Alliance is taken from [here](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37)
+- Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata/football.zip)
 
 ## Getting Started
 ### Aliases
