@@ -19,17 +19,16 @@ scikit-bio                0.6.3
 urllib3                   2.2.2
 ```
 
-- Beth-Hessian codes (files 'beth_hessian.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [](https://lorenzodallamico.github.io/articles/unified_20.pdf).
+- Beth-Hessian codes (files 'beth_hessian.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [Dall'Amico, Lorenzo, Romain Couillet, and Nicolas Tremblay. "A unified framework for spectral clustering in sparse graphs." Journal of Machine Learning Research 22.217 (2021): 1-56.](https://www.jmlr.org/papers/v22/20-261.html).
 - High school data is from [SocioPatterns](http://www.sociopatterns.org/datasets/high-school-contact-and-friendship-networks/). Originally studied in [Mastrandrea, Rossana, Julie Fournet, and Alain Barrat. "Contact patterns in a high school: a comparison between data collected using wearable sensors, contact diaries and friendship surveys." PloS one 10.9 (2015): e0136497.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0136497)
 - Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Schaub, Michael T., et al. "Markov dynamics as a zooming lens for multiscale community detection: non clique-like communities and the field-of-view limit." PloS one 7.2 (2012): e32210.](https://doi.org/10.1371/journal.pone.0032210).
-- Military Alliance is taken from [here](http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5.1__.dta_.zip)
-- Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata/football.zip)
+- Military Alliance is taken from [ATOP project](http://www.atopdata.org/data.html) (direct download link: http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5.1__.dta_.zip)
+- Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata). (direct download link: http://www-personal.umich.edu/~mejn/netdata/football.zip)
 
 ## On HSBMs
-You can try the codes on hierarchical stochastic block model with either trial_on_KTSBM.py or trial_on_unbalanced.py
 
 ### On BTSBMs (Figure 2) and ternary tree SBMs (Figure 8)
-You can try by typing:
+You can run the following command:
 ```
 $ python3 KTSBM_plane.py number_of_levels k-nary num_nodes_per_bottom_community num_samples a_0, a_1 ... a_{number_of_levels-1} (seed)
 ```
@@ -46,7 +45,7 @@ $ python3 KTSBM_plane.py 4 3 100 1 10 50 60 130
 
 
 ### Unbalanced tree example 1 (Figure 9) and example 2 (Figure 10)
-You can try by typing:
+You can run the following command:
 ```
 $ python3 trial_on_unbalanced.py beta a_last example1/2 num_nodes_per_bottom_community
 ```
@@ -61,7 +60,7 @@ $ python3 trial_on_unbalanced.py 0.3 144 example2 100
 ```
 
 ### Deeper BTSBMs (Figure 11)
-You can try by typing:
+You can run the following command:
 ```
 $ python3 trial_on_BTSBM.py beta a_last num_nodes_per_bottom_community number_of_levels k-nary
 ```
