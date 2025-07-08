@@ -19,14 +19,10 @@ scikit-bio                0.6.3
 urllib3                   2.2.2
 ```
 
-- Beth-Hessian codes (files 'beth_hessian.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [Hierarchical block structures and high-resolution model selection in large networks](https://doi.org/10.1103/PhysRevX.4.011047).
-:::
-Note that graph tool sometimes conflicts with other libraries.
-In our conda enviroment, graph tool and graphciz_layout cannot be used at the same time.
-:::
+- Beth-Hessian codes (files 'beth_hessian.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [](https://lorenzodallamico.github.io/articles/unified_20.pdf).
 - High school data is from [SocioPatterns](http://www.sociopatterns.org/datasets/high-school-contact-and-friendship-networks/). Originally studied in [Mastrandrea, Rossana, Julie Fournet, and Alain Barrat. "Contact patterns in a high school: a comparison between data collected using wearable sensors, contact diaries and friendship surveys." PloS one 10.9 (2015): e0136497.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0136497)
 - Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Schaub, Michael T., et al. "Markov dynamics as a zooming lens for multiscale community detection: non clique-like communities and the field-of-view limit." PloS one 7.2 (2012): e32210.](https://doi.org/10.1371/journal.pone.0032210).
-- Military Alliance is taken from [here](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37)
+- Military Alliance is taken from [here](http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5.1__.dta_.zip)
 - Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata/football.zip)
 
 ## On HSBMs
