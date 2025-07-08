@@ -1,7 +1,7 @@
 # bottom-up hierarchical community detection algorithm
 
 ## Dependency
-This codes depends on follwing codes: 
+This codes depends on follwing libraries: 
 ```
 python                    3.12.2 
 numpy                     1.26.4
@@ -24,7 +24,8 @@ urllib3                   2.2.2
 Note that graph tool sometimes conflicts with other libraries.
 In our conda enviroment, graph tool and graphciz_layout cannot be used at the same time.
 :::
-- Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Markov Dynamics as a Zooming Lens for Multiscale Community Detection: Non Clique-Like Communities and the Field-of-View Limit](https://doi.org/10.1371/journal.pone.0032210).
+- High school data is from [SocioPatterns](http://www.sociopatterns.org/datasets/high-school-contact-and-friendship-networks/). Originally studied in [Mastrandrea, Rossana, Julie Fournet, and Alain Barrat. "Contact patterns in a high school: a comparison between data collected using wearable sensors, contact diaries and friendship surveys." PloS one 10.9 (2015): e0136497.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0136497)
+- Power grid of Continental Europe from the [Union for the Coordination of Transmission of Electricity (UCTE) map](http://www.ucte.org) is obtained from the [github repository](https://github.com/barahona-research-group/PyGenStability/blob/master/examples/real_examples/powergrid/Example_powergrid.ipynb), which is used for [Schaub, Michael T., et al. "Markov dynamics as a zooming lens for multiscale community detection: non clique-like communities and the field-of-view limit." PloS one 7.2 (2012): e32210.](https://doi.org/10.1371/journal.pone.0032210).
 - Military Alliance is taken from [here](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37)
 - Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata/football.zip)
 
@@ -74,7 +75,7 @@ For example, to reproduce one point (at beta = 0.3) Figure 11,
 $ python3 trial_on_BTSBM.py 0.3 81 100 7 2
 ``` 
 
-## Robustness of linkage to misculstering errors
+## Robustness of linkage to misculstering errors (Figure 3)
 ```
 $ python3 robustness.py
 ```
@@ -94,7 +95,7 @@ $ python3 trial_military_alliance.py
 $ python3 football_nt.py
 ```
 
-## Compare with synthesis
+## Compare with synthesis (Figure 12)
 ```
 $ python3 compare_bup_synthesis.py
 ```
