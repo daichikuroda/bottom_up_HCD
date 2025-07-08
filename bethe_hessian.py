@@ -1,24 +1,13 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.sparse.linalg
 import random
 
 random.seed
-import time
-import itertools
 import networkx as nx
 import sys
 from sklearn.cluster import KMeans
-from scipy.sparse import coo_matrix, bmat
 
 import sys
-
-parent_codef = "/home/indy-stg3/user2/bottom_up_hierarchical/"
-sys.path += [
-    "./Unified_framework_codes/Package/",
-    parent_codef + "Unified_framework_codes/Package/",
-]  ### Specify the directory where the Package is
-from generic_functions import *
 
 ######################################################################################################################################
 

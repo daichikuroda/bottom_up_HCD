@@ -1,20 +1,25 @@
 # bottom-up hierarchical community detection algorithm
 
 ## Dependency
-This codes depends on follwing codes:https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37
-- networkx
-    - graphviz_layout
-- scipy
-- sklearn
-- numpy
-- matplotlib
+This codes depends on follwing codes: 
+```
+python                    3.12.2 
+numpy                     1.26.4
+scikit-learn              1.5.1
+pandas                    2.2.1
+scipy                     1.13.1
+seaborn                   0.13.2 
+networkx                  3.1 
+matplotlib                3.8.0 
+tqdm                      4.67.1
+igraph                    0.11.4
+pygraphviz                1.9
+geopandas                 0.14.2
+scikit-bio                0.6.3
+urllib3                   2.2.2
+```
 
-- graph tool (bayesian)
-- geopandas (plotting military dataset)
-
-
-- Paris codes (inside ./Paris/paris_codes/) are obtained from https://github.com/tbonald/paris. This method is introduced in [Hierarchical Graph Clustering using Node Pair Sampling](http://arxiv.org/abs/1806.01664).
-- Beth-Hessian codes (files 'beth_hessian.py' and 'generic_functions.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [Hierarchical block structures and high-resolution model selection in large networks](https://doi.org/10.1103/PhysRevX.4.011047).
+- Beth-Hessian codes (files 'beth_hessian.py') are obtained from https://lorenzodallamico.github.io/publication/unified20/. This method is introduced in [Hierarchical block structures and high-resolution model selection in large networks](https://doi.org/10.1103/PhysRevX.4.011047).
 :::
 Note that graph tool sometimes conflicts with other libraries.
 In our conda enviroment, graph tool and graphciz_layout cannot be used at the same time.
@@ -23,51 +28,78 @@ In our conda enviroment, graph tool and graphciz_layout cannot be used at the sa
 - Military Alliance is taken from [here](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37)
 - Foot ball data is from [M.E.J. Newman's webpage](http://www-personal.umich.edu/~mejn/netdata/football.zip)
 
-## Getting Started
-### Aliases
-- rbu stands for bottom-up
-- rbp stands for top-down
-
-### Trying on HSBM
+## On HSBMs
 You can try the codes on hierarchical stochastic block model with either trial_on_KTSBM.py or trial_on_unbalanced.py
 
-#### K-nary balanced tree 
+### On BTSBMs (Figure 2) and ternary tree SBMs (Figure 8)
 You can try by typing:
 ```
-$ python3 trial_on_BTSBM.py beta a_last num_nodes_per_bottom_community number_of_levels k-nary
+$ python3 KTSBM_plane.py number_of_levels k-nary num_nodes_per_bottom_community num_samples a_0, a_1 ... a_{number_of_levels-1} (seed)
 ```
 
-For example,
+For example, to obtain one-sample values at a_1 = 50, a_2 = 60 for Figure 2, 
 ```
-$ python3 trial_on_BTSBM.py 0.1 36 200 4 2
+$ python3 KTSBM_plane.py 4 2 200 1 40 50 60 100
+``` 
+
+To obtain one-sample values at a_1 = 50, a_2 = 60 for Figure 8, 
 ```
-#### Unbalanced tree example 1 or 2
+$ python3 KTSBM_plane.py 4 3 100 1 10 50 60 130
+``` 
+
+
+### Unbalanced tree example 1 (Figure 9) and example 2 (Figure 10)
 You can try by typing:
 ```
 $ python3 trial_on_unbalanced.py beta a_last example1/2 num_nodes_per_bottom_community
 ```
 
-For example,
+For example to recover one point (at beta = 0.3) in Figure 9 
 ```
 $ python3 trial_on_unbalanced.py 0.3 64 example1 100
 ```
+To recover one point (at beta = 0.3) in Figure 10,
+```
+$ python3 trial_on_unbalanced.py 0.3 144 example2 100
+```
 
-### Robustness of linkage to misculstering errors
-#### Type of errors and tree recovery rate without graph split
-robustness_bu_bh.py
+### Deeper BTSBMs (Figure 11)
+You can try by typing:
+```
+$ python3 trial_on_BTSBM.py beta a_last num_nodes_per_bottom_community number_of_levels k-nary
+```
 
-#### Tree recovery rate with graph split
-robustness_bu_bh_graph_split.py
+For example, to reproduce one point (at beta = 0.3) Figure 11,
+```
+$ python3 trial_on_BTSBM.py 0.3 81 100 7 2
+``` 
 
-#### Confusion matrix
-robustness_bu_bh_plot.py
+## Robustness of linkage to misculstering errors
+```
+$ python3 robustness.py
+```
 
-### Trying on real datasets
-#### High shool dataset
-highschool.py
+## Real datasets
+### High shool dataset (Figure 4)
+```
+$ python3 highschool.py
+```
+### Military dataset (Figures 5 & 6)
+```
+$ python3 trial_military_alliance.py
+```
 
-#### Military dataset
-trial_military_alliance.py
+### Football dataset (Figure 15)
+```
+$ python3 football_nt.py
+```
 
-#### Football dataset
-football_nt.py
+## Compare with synthesis
+```
+$ python3 compare_bup_synthesis.py
+```
+The code compares the performance between the bottom-up method and synthesis (Fang, Sijia, and Karl Rohe. "T-Stochastic Graphs." arXiv preprint arXiv:2309.01301 (2023).)
+
+## Aliases
+- rbu stands for bottom-up
+- rbp stands for top-down

@@ -8,24 +8,8 @@ import numpy as np
 import networkx as nx
 import itertools
 
-import utild
+import utils
 import measurements as mea
-import positions
-
-
-def create_perfect_tree(depth, num_children):
-    G = nx.Graph()
-    nn = 1
-    parents = [0]
-    for d in range(depth):
-        new_parents = []
-        for parent in parents:
-            for child in range(num_children):
-                G.add_edge(parent, nn)
-                new_parents.append(nn)
-                nn += 1
-        parents = new_parents
-    return G
 
 
 def create_graph(probability_matrix, npseed=None):
@@ -119,7 +103,7 @@ class hsbm:
         for _g, _p in enumerate(edge_densities_per_group):
             self.p_matrix[self.group_matrix == _g] = _p
         if specified_ps is not None:
-            for (ig, jg, p) in specified_ps:
+            for ig, jg, p in specified_ps:
                 self.p_matrix[ig][jg] = p
                 self.p_matrix[jg][ig] = p
         if prepare_truth:
@@ -128,19 +112,6 @@ class hsbm:
                 for node in nodes:
                     self.true_label[node] = block_id
             self.probability_matrix = self.probability_matrix()
-
-    def true_clustering_small_old(self, distance):
-        block_range = range(len(self.sizes))
-        groups_remaining = set(range(len(self.sizes)))
-        clusterings = []
-        group_d = self.group_matrix <= distance
-        while len(groups_remaining) >= 1:
-            ig = groups_remaining.pop()
-            g = set(np.where(group_d[ig])[0])
-            g = set([ig]) | g
-            clusterings.append(g)
-            groups_remaining = groups_remaining - g
-        return clusterings
 
     def true_clustering_small(self, similarity):
         block_range = range(len(self.sizes))
@@ -220,10 +191,6 @@ class hsbm:
                     g.add_edge(*e)  # __safe
         return g
 
-    def pos_flex(self, G, layout=nx.spring_layout):
-        pos, centers = positions.pos_flex(G, self.partition)
-        return pos, centers
-
     def calc_accuracy(
         self, estimated_clustering, layer, calc_acc_algo=mea.calc_accuracy
     ):
@@ -239,7 +206,7 @@ class shsbm_nchild(hsbm):
     def __init__(self, num_nodes, n_child, edge_density_per_layer, prepare_truth=True):
         num_layer = len(edge_density_per_layer)
         self.n_child = n_child
-        group_matrix = utild.create_group_matrix(num_layer, num_child=n_child)
+        group_matrix = utils.create_group_matrix(num_layer, num_child=n_child)
         edge_densities_per_group = edge_density_per_layer
         self._num_nodes = num_nodes
         sizes = num_nodes * np.ones(n_child ** (num_layer - 1), dtype=int)
@@ -262,88 +229,6 @@ class shsbm_nchild(hsbm):
                 tree_labels.T[l][(ll * n) : ((ll + 1) * n)] = ll % self.n_child
         return tree_labels
 
-    def error_to_label0_legacy(self, p, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        change_layers = _rng.integers(0, self.num_layer - 1, len(indexes))
-        change_to = _rng.integers(1, self.n_child, len(indexes))
-        tree_labels_with_error = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i][change_layers[ii]] = (
-                tree_labels_with_error[i][change_layers[ii]] + change_to[ii]
-            ) % self.n_child
-        return tree_labels_with_error
-
-    def error_to_label0(self, p, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        change_layers = _rng.integers(0, self.num_layer - 1, len(indexes))
-        change_to = _rng.integers(1, self.n_child, len(indexes))
-        tree_labels_with_error = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i][change_layers[ii]] = (
-                tree_labels_with_error[i][change_layers[ii]] + change_to[ii]
-            ) % self.n_child
-            tree_labels_with_error[i][
-                min(change_layers[ii] + 1, self.num_layer - 1) :
-            ] = _rng.integers(0, self.n_child, self.num_layer - 2 - change_layers[ii])
-        return tree_labels_with_error
-
-    def error_to_label1_legacy(self, p, layer, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        change_to = _rng.integers(1, self.n_child, len(indexes))
-        tree_labels_with_error = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i][layer - 1] = (
-                tree_labels_with_error[i][layer - 1] + change_to[ii]
-            ) % self.n_child
-        return tree_labels_with_error
-
-    def error_to_label_to_bottom(self, p, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        change_to = _rng.integers(1, self.n_child, len(indexes))
-        tree_labels_with_error = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i][-1] = (
-                tree_labels_with_error[i][-1] + change_to[ii]
-            ) % self.n_child
-        return tree_labels_with_error
-
-    def error_to_label1(self, p, layer, return_nonrandomized=False, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        change_to = _rng.integers(1, self.n_child, len(indexes))
-        tree_labels_with_error = self.tree_labels.copy()
-        if return_nonrandomized:
-            tree_labels_with_error_non_randomized = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i][layer - 1] = (
-                tree_labels_with_error[i][layer - 1] + change_to[ii]
-            ) % self.n_child
-            if return_nonrandomized:
-                tree_labels_with_error_non_randomized[i][layer - 1] = (
-                    tree_labels_with_error_non_randomized[i][layer - 1] + change_to[ii]
-                ) % self.n_child
-            tree_labels_with_error[i][min(layer, self.num_layer - 1) :] = _rng.integers(
-                0, self.n_child, self.num_layer - 1 - layer
-            )
-        if return_nonrandomized:
-            return tree_labels_with_error, tree_labels_with_error_non_randomized
-        else:
-            return tree_labels_with_error
-
-    def error_to_label_uniform_rand(self, p, npseed=None):
-        _rng = np.random.default_rng(npseed)
-        indexes = np.where(_rng.random(self.n_all) < p)[0]
-        tree_labels_with_error = self.tree_labels.copy()
-        for ii, i in enumerate(indexes):
-            tree_labels_with_error[i] = _rng.integers(
-                0, self.n_child, self.num_layer - 1
-            )
-        return tree_labels_with_error
-
     def tree_label_to_label(self, tree_labels, layer=None):
         if layer is None:
             layer = self.num_layer - 1
@@ -353,26 +238,3 @@ class shsbm_nchild(hsbm):
             axis=1,
         )
         return labels
-
-    def switch_communities_error(self, layer=None, num_switch=1, npseed=None):
-        labels_on_the_layer = self.tree_label_to_label(self.tree_labels, layer=layer)
-        num_clusters_in_the2 = len(np.unique(labels_on_the_layer)) // 2
-        if num_clusters_in_the2 <= num_switch:
-            print("number of switches are too large")
-            raise ValueError
-        _rng = np.random.default_rng(npseed)
-        indexes_to_switch0 = []
-        indexes_to_switch1 = []
-        while len(np.unique(indexes_to_switch0)) < num_switch:
-            indexes_to_switch0 = _rng.integers(0, num_clusters_in_the2, num_switch)
-        while len(np.unique(indexes_to_switch1)) < num_switch:
-            indexes_to_switch1 = _rng.integers(
-                num_clusters_in_the2, 2 * num_clusters_in_the2, num_switch
-            )
-        labels_w_switch = np.zeros(len(labels_on_the_layer), dtype=int)
-        for i in (
-            set(np.arange(num_clusters_in_the2, 2 * num_clusters_in_the2))
-            - set(indexes_to_switch1)
-        ) | set(indexes_to_switch0):
-            labels_w_switch[labels_on_the_layer == i] = 1
-        return labels_w_switch

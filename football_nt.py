@@ -6,33 +6,23 @@ Created on Mon Jan  9 17:20:31 2023
 @author: kurodadaichi
 """
 
-import urllib.request
-import io
-import zipfile
-
-import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 from sklearn.metrics.cluster import adjusted_mutual_info_score, adjusted_rand_score
 
 import wrapper as wra
 import handle_realdata as hr
 import plots
-import utild
+import utils
 import measurements as mea
 import plots
 
 exclude_independent = True
-algos = ["rbu", "rbp", "paris"]  #  ["rbu", "rbp", "paris"]
+algos = ["rbu", "rbp"]
 num_samples = 1
 
 G, txt = hr.create_football_net()
 G, decode, encode = hr.change_node_nums(G)
 G = hr.data_correction(G)
-# print(txt)
-# # print degree for each team - number of games
-# for n, d in G.degree():
-#     print(f"{n:20} {d:2}")
 
 group_names = {
     0: "Atlantic Coast",
@@ -103,22 +93,15 @@ for isample in range(num_samples):
         ):
             measurements[_mea][algo][isample] = s
 for algo in algos:
-    if algo == "bayesian":
-        dG, _c = utild.nx_dendrogram(
-            hcs[algo].community_bits,
-            hcs[algo].bottom_communities,
-            from_community_bits=True,
-        )
-    else:
-        dG, _c = utild.nx_dendrogram(
-            hcs[algo].Z,
-            hcs[algo].bottom_communities,
-        )
-    _bool = algo == "paris"
-    res = {"paris": 100, "rbu": 300, "bayesian": 20}
-    dG = utild.dG_with_distance(
+    dG, _c = utils.nx_dendrogram(
+        hcs[algo].Z,
+        hcs[algo].bottom_communities,
+    )
+
+    res = {"rbu": 300}
+    dG = utils.dG_with_distance(
         dG,
-        logscale=_bool,
+        logscale=False,
         resolution=res.get(algo, 100),  # last_size=1 / 5
     )
     # nx.write_edgelist(dG, "test.edgelist", data=True)

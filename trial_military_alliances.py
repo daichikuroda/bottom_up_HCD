@@ -6,34 +6,25 @@ Created on Wed Nov 23 16:43:54 2022
 @author: maximilien
 """
 
-import pandas as pd
 import networkx as nx
-from tqdm import tqdm
 
 
 import numpy as np
-import sys
 from matplotlib import pyplot as plt
 import wrapper as wra
-import utild
+import utils
 import plots
 import handle_realdata as hr
 
-sys.path.insert(0, "./Paris/paris_codes/")
-
-from paris import paris
-import utils
 
 import geopandas as gpd
 
 import world_alliances as alli
 
-algos = ["rbu", "rbp", "paris"]
+algos = ["rbu", "rbp"]
 algo_names = {
     "rbu": "bottom-up",
     "rbp": "top-down",
-    "paris": "paris",
-    "bayesian": "bayesian",
 }
 
 isolated_cluster = True
@@ -74,7 +65,7 @@ if __name__ == "__main__":
         communities = hcs[algo].bottom_communities
         clusterings = []
         Z = hr.handle_inf_in_Z(hcs[algo].Z)
-        if algo == "rbp" or algo == "bayesian":
+        if algo == "rbp":
             _bool = False
         else:
             _bool = True
@@ -82,22 +73,13 @@ if __name__ == "__main__":
             Z,
             logscale=_bool,
         )
-        if algo == "paris":
-            for clustering_rank in [1, 2, 3, 4]:
-                _cl = hcs["paris"].convert_communities_of_paris(
-                        utils.best_clustering(hcs["paris"].Z, k=clustering_rank)
-                    )
-                if isolated_cluster:
-                    _cl += [np.array(S[1].nodes())]
-                clusterings.append(_cl)
-        else:
-            for k in range(2, len(hcs[algo].bottom_communities) + 1):
-                _cl = utild.clustering_k_communities(
-                    hcs[algo].Z, k, hcs[algo].bottom_communities
-                )
-                if isolated_cluster:
-                    _cl += [np.array(S[1].nodes())]
-                clusterings.append(_cl)
+        for k in range(2, len(hcs[algo].bottom_communities) + 1):
+            _cl = utils.clustering_k_communities(
+                hcs[algo].Z, k, hcs[algo].bottom_communities
+            )
+            if isolated_cluster:
+                _cl += [np.array(S[1].nodes())]
+            clusterings.append(_cl)
         clusterings_dict[algo] = clusterings
         for l, communities in enumerate(clusterings):
             world[algo + str(l)] = np.nan
@@ -138,4 +120,8 @@ if __name__ == "__main__":
             fig, ax1 = plt.subplots(1, 1, figsize=(12, 5))
             world.plot(ax=ax1, column=algo + str(l))
             ax1.set_axis_off()
+            plt.title(
+                algo_names[algo] + " clustering at level " + str(l),
+                fontsize=20,
+            )
             plt.show()

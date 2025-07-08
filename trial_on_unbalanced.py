@@ -7,12 +7,10 @@ import numpy as np
 import sys
 import time
 import os
-import csv
-import utild
+import utils
 import HSBMs as hsbms
 import wrapper as wra
 
-parent_codef = "/home/indy-stg3/user2/codes/"
 
 sizes_merge = {
     "example1": [2, 2] + [1] * 24 + [2, 2],
@@ -27,11 +25,10 @@ def simulate(
     num_nodes_unit=100,
     tree_type="merge_original",
     num_layer=6,
-    stopping_rule="stop_bethe_hessian",
 ):
     f = tree_shape + "_group_matrix.csv"
     if not os.path.exists(f):
-        f = parent_codef + tree_shape + "_group_matrix.csv"
+        f = tree_shape + "_group_matrix.csv"
     group_matrix = np.loadtxt(f, delimiter=",", dtype=int)
     num_true_communities = len(group_matrix)
     if (
@@ -55,7 +52,7 @@ def simulate(
     algos = ["rbu", "rbp"]
 
     a_list = a_last * beta ** (np.arange(0, num_layer))[::-1]
-    edge_densities = utild.calc_p_from_a(a_list, N)
+    edge_densities = utils.calc_p_from_a(a_list, N)
     if edge_densities[-1] > 1.0:
         print(edge_densities)
         raise ValueError
@@ -160,6 +157,5 @@ if __name__ == "__main__":
         # tree_type = tree_type,
         tree_type="merge",
         num_layer=6,
-        stopping_rule="stop_bethe_hessian",
     )
     print("Simulation ended at ", time.asctime(time.localtime()))

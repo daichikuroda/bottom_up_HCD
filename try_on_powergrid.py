@@ -3,26 +3,16 @@
 """
 @author: kurodadaichi
 """
-import sys
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
 import wrapper as wra
 import plots
-import utild
-
-sys.path += [
-    "./Paris/paris_codes/",
-]
-from paris import paris
 import utils
 
-# from pygenstability import run, plotting
 
-powergrid_path = "./PyGenStability-master/examples/real_examples/powergrid/"
-result_path = "./../results/newresults/powergrid2/"
+powergrid_path = "./powergrid/"
 
-algos = ["rbp", "rbu", "paris"]  # , "bayesian"]
+algos = ["rbp", "rbu"]
 
 edges = np.genfromtxt(powergrid_path + "UCTE_edges.txt")
 location = np.genfromtxt(powergrid_path + "UCTE_nodes.txt")
@@ -51,7 +41,7 @@ for _algo in algos:
 for _algo in algos:
     add_params_plot = {
         "rbp": dict(
-            clustering_point=utild.clustering_k_communities_by_similarities,
+            clustering_point=utils.clustering_k_communities_by_similarities,
             similarities=hcs["rbp"].similarities,
         )
     }
@@ -64,21 +54,21 @@ for _algo in algos:
             num_cluster,
             pos=pos,
             node_size=5,
-            edge_width=0.5,  # ),
-            save_path=result_path + _algo + str(num_cluster) + ".pdf",
+            edge_width=0.5,
+            # save_path=result_path + _algo + str(num_cluster) + ".pdf",
             with_title=False,
             alpha=1.0,
             node_linew=0,
             **add_params_plot.get(_algo, dict())
         )
 
-        if _algo == "rbp" or _algo == "bayesian":
+        if _algo == "rbp":
             _bool = False
         else:
             _bool = True
     plots.plot_dendrogram(
         hcs[_algo].Z,
-        save_path=result_path + _algo + "_dendrogram.pdf",
+        # save_path=result_path + _algo + "_dendrogram.pdf",
         logscale=_bool,
     )
     if _algo == "rbp":
@@ -87,5 +77,5 @@ for _algo in algos:
             hcs[_algo].similarities,
             logscale=True,
             allow_negative=True,
-            save_path=result_path + _algo + "_sim_dendrogram.pdf",
+            # save_path=result_path + _algo + "_sim_dendrogram.pdf",
         )

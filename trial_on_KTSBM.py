@@ -6,8 +6,7 @@
 import numpy as np
 import sys
 import time
-import csv
-import utild
+import utils
 import HSBMs as hsbms
 import wrapper as wra
 
@@ -25,16 +24,14 @@ def simulate(
     layers_to_see = list(range(1, num_layer))
 
     measurements = [
-        "err_P",
         "err_St",
         "ami",
-        "ari",
     ]
 
-    algos = ["rbu", "rbp", "paris"]
+    algos = ["rbu", "rbp"]
 
     a_list = a_last * beta ** (np.arange(0, num_layer))[::-1]
-    edge_densities = utild.calc_p_from_a(a_list, N)
+    edge_densities = utils.calc_p_from_a(a_list, N)
     if edge_densities[-1] > 1.0:
         print(edge_densities)
         raise ValueError

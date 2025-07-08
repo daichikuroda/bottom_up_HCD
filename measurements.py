@@ -17,7 +17,7 @@ from os.path import join
 import itertools
 import scipy.sparse as sp
 import scipy.linalg as splinalg
-import utild
+import utils
 
 
 def make_cost_m(cm):
@@ -94,14 +94,14 @@ def Sts_P(
 
         if cl1 == cl2:
             if len(cl1) == 1:
-                P_matrix = utild.smart_assigment(
+                P_matrix = utils.smart_assigment(
                     P_matrix,
                     cl1,
                     cl1,
                     0,
                 )  # num edges is np_A[cl1, :][:, cl1]/2
             else:
-                P_matrix = utild.smart_assigment(
+                P_matrix = utils.smart_assigment(
                     P_matrix,
                     cl1,
                     cl1,
@@ -111,15 +111,15 @@ def Sts_P(
             p = np.sum(np_A[cl1, :][:, cl2]) / (
                 len(cl1) * len(cl2)
             )  # num edges is np_A[cl1, :][:, cl2] or (np_A[cl1, :][:, cl2]+np_A[cl2, :][:, cl1])/2
-            P_matrix = utild.smart_assigment(P_matrix, cl1, cl2, p)
-            P_matrix = utild.smart_assigment(P_matrix, cl2, cl1, p)
+            P_matrix = utils.smart_assigment(P_matrix, cl1, cl2, p)
+            P_matrix = utils.smart_assigment(P_matrix, cl2, cl1, p)
         return P_matrix
 
     if N is None:
         # N = sum([len(c) for c in communities])
         N = len(np_A)
     if maxk is not None:
-        communities, cluster, cluster_com = utild.clustering_k_communities(
+        communities, cluster, cluster_com = utils.clustering_k_communities(
             D,
             maxk,
             communities,
@@ -163,79 +163,13 @@ def Sts_P(
             P_matrix = fill_P(P_matrix, cc0, cc1)
         cluster_bits = [cb[::-1] for cb in cluster_bits.values()]
         if arrnage_len:
-            cluster_bits = utild.arrange_len_community_bits(cluster_bits)
+            cluster_bits = utils.arrange_len_community_bits(cluster_bits)
         St_small = np.array(
             [[metric(cb0, cb1) for cb1 in cluster_bits] for cb0 in cluster_bits],
             dtype=int,
         )
-    St = utild.st_small_to_st(St_small, communities)
+    St = utils.st_small_to_st(St_small, communities)
     return St, St_small, P_matrix
-
-
-def calc_cost(np_A, coms):
-    S = sum([len(_c) for _c in coms])
-    return S * np.sum(
-        [
-            np.sum(np_A[coms[i], :][:, coms[j]])
-            for i in range(len(coms))
-            for j in range(i + 1, len(coms))
-        ]
-    )
-
-
-def calc_tree_cost(np_A, D, communities, maxk=None):
-    n = len(communities)  # number of clusters
-    communities = [list(_c) for _c in communities]
-    cluster = {i: _c for (i, _c) in zip(range(n), communities)}
-    if maxk is None:
-        maxk = n - 1
-    if len(communities) != n:
-        raise ValueError("the number of communities does not match")
-    else:
-        cost = int(
-            np.sum(
-                [
-                    (
-                        len(com)
-                        * (
-                            np.sum(np_A[:, com][com, :])
-                            - np.sum(np.diag(np_A[:, com][com, :]))
-                        )
-                        / 2
-                    )
-                    for com in communities
-                ]
-            )
-        )
-        print(cost)
-        t = 0
-        while t <= maxk - 1:
-            dist = D[t][2]
-            t2 = t
-            com_t = {}
-            print(t2)
-            while D[t2][2] == dist:
-                ic0 = int(D[t2][0])
-                ic1 = int(D[t2][1])
-                comt2 = []
-                for ic in (ic0, ic1):
-                    if ic in com_t.keys():
-                        comt2 += com_t.pop(ic)
-                    else:
-                        comt2.append(cluster[ic])
-                com_t[n + t2] = comt2
-                t2 += 1
-                if t2 >= maxk:
-                    break
-            for t3 in range(t, t2):
-                cluster[n + t3] = cluster.pop(int(D[t3][0])) + cluster.pop(
-                    int(D[t3][1])
-                )
-            c = calc_cost(np_A, com_t[min(n + t2 - 1, n + maxk)])
-            print(min(n + t2 - 1, n + maxk), c)
-            cost += c
-            t = t2
-    return cost
 
 
 def calc_standrized_square_error_from_matrixes(matrix_est, matrix_true):
@@ -277,10 +211,6 @@ def calc_similarities_for_top_down(A, D, bottom_communities, nodes_list=None):
     return similarities
 
 
-def calc_old_err_St(matrix_est, matrix_true):
-    return calc_standrized_square_error_from_matrixes(matrix_est + 1, matrix_true + 1)
-
-
 def calc_corref_in_D(
     true_D,
     est_D,
@@ -316,6 +246,23 @@ def calc_corref_in_D(
     return corref_in_D
 
 
+def tree_to_matrix(tree_list, start=0):
+    all_leaves = max(tree_list, key=len)
+    mapping = {leaf: i for i, leaf in enumerate(all_leaves)}
+    num_leaves = len(all_leaves)
+    matrix = np.zeros((num_leaves, num_leaves), dtype=int) - 1 + start
+
+    for vertex in tree_list:
+        # Convert set to 0-based index list
+        # Set pairwise values for overlapping indices
+        for i, v in enumerate(vertex):
+            matrix[mapping[v], mapping[v]] += 1
+            for u in vertex[i + 1 :]:
+                matrix[mapping[v], mapping[u]] += 1
+                matrix[mapping[u], mapping[v]] += 1
+    return matrix
+
+
 def depth_lcas(community_bits, return_dict=True, ignore_path=False, self_return=False):
     if return_dict and self_return and len(community_bits) >= 1:
         return {
@@ -340,13 +287,11 @@ def depth_lcas(community_bits, return_dict=True, ignore_path=False, self_return=
             com_bits = np.array(com_bits)
             tree_set = []
             for comb in com_bits.T:
-                _, scoms = utild.unique_wt_all_indices_simple(comb)
+                _, scoms = utils.unique_wt_all_indices_simple(comb)
                 tree_set += [tuple(c) for c in scoms]
             tree_set += [tuple(com_bits.T[-1])]
             tree_set = [list(c) for c in set(tree_set)]
-            import tree_list_up as tlu
-
-            return tlu.tree_to_matrix(tree_set)
+            return tree_to_matrix(tree_set)
         else:
             return np.array(
                 [

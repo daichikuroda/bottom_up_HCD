@@ -3,19 +3,15 @@
 """
 @author: kurodadaichi
 """
-import time
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
 # from scipy.cluster.hierarchy import dendrogram
 import scipy.cluster.hierarchy as sch
-from os.path import join
-import itertools
-import scipy.sparse as sp
-import scipy.linalg as splinalg
 
-import utild
+
+import utils
 import recursive as rec
 
 legend_font_size = 18
@@ -39,7 +35,7 @@ def draw_network_and_dendrogram(
 ):
     if legend_size is None:
         legend_size = legend_font_size
-    group_colors = utild.colors[:6] + utild.colors[8:]
+    group_colors = utils.colors[:6] + utils.colors[8:]
     tree_nodes0 = np.array(dG.nodes)
     between_nodes = tree_nodes0[tree_nodes0 <= -1]
     tree_nodes = tree_nodes0[
@@ -97,39 +93,6 @@ def draw_network_and_dendrogram(
     plt.show()
 
 
-def heatmapsh_scatter(X, Y, Z, vmin=0, vmax=1, distinguish_zeros=False):
-    if distinguish_zeros:
-        zeros = Z.flatten() == 0
-        plt.scatter(
-            X.flatten()[zeros],
-            Y.flatten()[zeros],
-            c=Z.flatten()[zeros],
-            cmap="coolwarm",
-            vmin=vmin,
-            vmax=vmax,
-            marker="s",
-        )
-        plt.scatter(
-            X.flatten()[zeros == False],
-            Y.flatten()[zeros == False],
-            c=Z.flatten()[zeros == False],
-            cmap="coolwarm",
-            vmin=vmin,
-            vmax=vmax,
-        )
-    else:
-        plt.scatter(
-            X.flatten(),
-            Y.flatten(),
-            c=Z.flatten(),
-            cmap="coolwarm",
-            vmin=vmin,
-            vmax=vmax,
-        )
-    cbar = plt.colorbar()
-    cbar.ax.tick_params(labelsize=tick_size)
-
-
 # Plot dendrogram
 def plot_dendrogram(
     D,
@@ -184,6 +147,7 @@ def plot_dendrogram_allow_negative(Z, **kwargs):
 
     return sch.dendrogram(Z2, leaf_label_func=llf, **kwargs)
 
+
 def plot_dendrogram_with_sim(
     D,
     similarities,
@@ -224,7 +188,7 @@ def plot_dendrogram_from_group_matrix(
     if new_group_matrix is True:
         group_matrix = np.max(group_matrix) + 1 - group_matrix
     D = sch.linkage(
-        utild.distance_matrix_to_condensed_one(group_matrix), method="single"
+        utils.distance_matrix_to_condensed_one(group_matrix), method="single"
     )
     plot_dendrogram(
         D,
@@ -242,7 +206,7 @@ def plot_for_recur_clustering(
     rbp,
     k,
     pos=nx.spring_layout,
-    clustering_point=utild.clustering_k_communities,
+    clustering_point=utils.clustering_k_communities,
     save_path=False,
     original_edges=True,
     width=16,
@@ -261,14 +225,14 @@ def plot_for_recur_clustering(
     #     left=0.02, right=0.98, bottom=0.06, top=0.85, wspace=0.05, hspace=0.05
     # )
     if (
-        clustering_point == utild.clustering_k_communities_by_similarities
+        clustering_point == utils.clustering_k_communities_by_similarities
         and similarities is not None
     ):
         if similarities is None:
             print(
                 "similarities are not provided. Therefore normal clustering point is used."
             )
-        clustering = utild.clustering_k_communities_by_similarities(
+        clustering = utils.clustering_k_communities_by_similarities(
             rbp, k, communities, similarities
         )
     else:
@@ -289,7 +253,7 @@ def plot_for_recur_clustering(
     draw_nodes.set_edgecolor("k")
     nx.draw_networkx_edges(G, pos, width=edge_width, alpha=alpha, edge_color="gray")
     nodes = list(G.nodes())
-    for l in range(min(len(clustering), len(utild.colors))):
+    for l in range(min(len(clustering), len(utils.colors))):
         nodelist = clustering[index[l]]  # [nodes[i] for i in clustering[index[l]]]
         draw_nodes = nx.draw_networkx_nodes(
             G,
@@ -297,7 +261,7 @@ def plot_for_recur_clustering(
             node_size=node_size,
             linewidths=node_linew * node_size,
             nodelist=nodelist,
-            node_color=utild.colors[l],
+            node_color=utils.colors[l],
         )
         draw_nodes.set_edgecolor("k")
     if save_path:

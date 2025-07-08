@@ -5,33 +5,22 @@ Created on Tue Dec 20 08:51:22 2022
 
 @author: kurodadaichi
 """
-import sys
 import numpy as np
 import networkx as nx
 from matplotlib import pyplot as plt
 import handle_realdata as hr
-import csv
 from sklearn.metrics.cluster import adjusted_mutual_info_score, adjusted_rand_score
-import utild
-import recursive as rec
-import bethe_hessian as cla
-import spectrald as spect
+import utils
 import plots
 import measurements as mea
-import positions
 import wrapper as wra
 
-sys.path.insert(0, "./Paris/paris_codes/")
-from paris import paris
-import utils
 
-algos = ["rbu", "rbp", "paris"]
+algos = ["rbu", "rbp"]
 algo_names = {"rbu": "bottom-up", "rbp": "top-dwon"}
 
 G = hr.high_school_net()
-G, to_get_original_mapping, mapping = hr.change_node_nums(
-    G
-)  # graph tool conversion does not work without this procedure
+G, to_get_original_mapping, mapping = hr.change_node_nums(G)
 
 # meta_data_f = high_school_folder + "metadata_2013.txt"
 class_dict = {}
@@ -53,26 +42,14 @@ for _cn, _m in enumerate(classes.values()):
     true_label[[nodes_num_map[_n] for _n in _m]] = _cn
 
 
-add_params = {
-    "bayesian": dict(
-        edge_distribution="real-exponential",
-        deg_corr=True,
-    )
-}
 hcs = {}
 for algo in algos:
     print(algo_names.get(algo, algo))
-    hcs[algo] = wra.hierarchical_communities(
-        G,
-        algo,
-        weighted=True,
-        num_communities=9,
-        **add_params.get(algo, dict())
-    )
+    hcs[algo] = wra.hierarchical_communities(G, algo, weighted=True, num_communities=9)
     print("AMI: ", adjusted_mutual_info_score(true_label, hcs[algo].labelk))
     print("num community: ", len(hcs[algo].communities))
 
-    detected_classes = utild.clustering_k_communities(
+    detected_classes = utils.clustering_k_communities(
         hcs[algo].Z, 9, hcs[algo].bottom_communities
     )
     print(
@@ -85,12 +62,11 @@ for algo in algos:
 
 for algo in algos:
     name = algo_names.get(algo, algo)
-    _bool = algo == "paris"
-    plots.plot_dendrogram(hcs[algo].Z, logscale=_bool)
+    plots.plot_dendrogram(hcs[algo].Z, logscale=False)
     plt.show()
-    dG, _c = utild.nx_dendrogram(hcs[algo].Z, hcs[algo].bottom_communities)
-    dG = utild.dG_with_distance(dG, logscale=_bool)
-    nx.write_edgelist(dG, "test.edgelist", data=True)
+    dG, _c = utils.nx_dendrogram(hcs[algo].Z, hcs[algo].bottom_communities)
+    dG = utils.dG_with_distance(dG, logscale=False)
+    # nx.write_edgelist(dG, "test.edgelist", data=True)
     ns = {"rbp": 3}
     plots.draw_network_and_dendrogram(
         G,
@@ -102,4 +78,3 @@ for algo in algos:
         node_size=ns.get(algo, 4),
         legend_size=8,
     )
-    

@@ -13,8 +13,8 @@ from scipy.cluster.vq import kmeans2
 
 # import scipy.linalg as splinalg
 import scipy.cluster.hierarchy as sch
-import utild
-import spectrald as spect
+import utils
+import spectrals as spect
 
 # =============================================================================
 # TOP-DOWN clustering
@@ -36,7 +36,6 @@ def recursive_bipartion(
     stopping_rule=spect.stop_bethe_hessian,
     max_count=False,
     partion_from_big=False,
-    non_converge_iter=100,
     initial_communities=None,
 ):
     if initial_communities is None:
@@ -57,19 +56,15 @@ def recursive_bipartion(
             nodes = community_to_divide.pop()
             cb = community_bits_to_go.pop()
         sG = G.subgraph(nodes)
-        # to_continue = utild.roop_for_converge(
-        #     stopping_rule, sG, max_roop=non_converge_iter
-        # )
+
         to_continue = stopping_rule(sG)
         if to_continue is True:
             count += 1
             OUT = "Partion count : " + str(count).zfill(2)
             sys.stdout.write("\r%s" % OUT)
-            # label, _centroid = utild.roop_for_converge(
-            #     partion_algo, sG, max_roop=non_converge_iter, nodelist=nodes
-            # )
+
             label, _centroid = partion_algo(sG, nodelist=nodes)
-            nodes_divided = utild.return_communities(label, nodes)
+            nodes_divided = utils.return_communities(label, nodes)
             if len(nodes_divided) >= 2:
                 community_to_divide += nodes_divided
                 community_bits_to_go += [cb + [0], cb + [1]]
@@ -143,6 +138,8 @@ def condensed_distance_similarity(
 ):
     if inputA:
         A = G
+        if sp.issparse(A) and isinstance(A, sp.coo_array):
+            A = A.toarray()
     elif weighted:
         A = nx.to_numpy_array(G, nodelist=nodelist)
     else:
