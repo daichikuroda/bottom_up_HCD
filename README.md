@@ -34,7 +34,7 @@ To reproduce the results of Figure 2, you can run the following command by varyi
 - num_nodes_per_bottom_community
 - num_samples: The results will be aggregated over "num_samples" runs
 - a_0, a_1, ..., a_{number_of_levels}: edge connection probabilities for level $\ell$ is set to $a_\ell \log N / N$, with $N$ being the number of nodes in the graph
-- (seed): addding a seed (optional)
+- (seed): addding a random seed (optional)
 ```
 $ python3 KTSBM_plane.py number_of_levels k-nary num_nodes_per_bottom_community num_samples a_0 a_1 ... a_{number_of_levels} (seed)
 ```
@@ -52,7 +52,7 @@ $ python3 KTSBM_plane.py 3 3 100 1 10 50 60 130
 
 ### Unbalanced tree example 1 (Figure 9) and example 2 (Figure 10)
 To reproduce the results of Figure 2, you can run the following command by varying the following parameters:
-- beta, a_last: parameters for the edge connection probabilties. The edge connection probability on level $\ell$ is set to be $\text{a\_last}~\text{beta}^{L-\ell} \log N / N$, with $L$ being the total number of levels.
+- beta, a_last: parameters for the edge connection probabilties. The edge connection probability on level $\ell$ is set to be a_last $\text{beta}^{L-\ell} \log N / N$, with $L$ being the total number of levels.
 - num_nodes_per_bottom_community
 - example1/2: chose example 1 or example 2
 ```
@@ -105,6 +105,7 @@ $ python3 compare_bup_synthesis.py
 ```
 The code compares the performance between the bottom-up method and synthesis (Fang, Sijia, and Karl Rohe. "T-Stochastic Graphs." arXiv preprint arXiv:2309.01301 (2023).)
 
-## Aliases
+## Aliases used in the codes
+In the code, the following shorthand notations are used:
 - rbu stands for bottom-up
 - rbp stands for top-down
