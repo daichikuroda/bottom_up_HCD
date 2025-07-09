@@ -1,4 +1,4 @@
-# bottom-up hierarchical community detection algorithm
+# Bottom-up hierarchical community detection algorithm
 
 ## Dependency
 This codes depends on follwing libraries: 
@@ -28,24 +28,33 @@ urllib3                   2.2.2
 ## On HSBMs
 
 ### On BTSBMs (Figure 2) and ternary tree SBMs (Figure 8)
-You can run the following command:
+To reproduce the results of Figure 2, you can run the following command by varying the following parameters:
+- number_of_levels: height of the tree
+- k-nary: set k=2 for binary hierarchies and k=3 for ternary hierarchies
+- num_nodes_per_bottom_community
+- num_samples: The results will be aggregated over "num_samples" runs
+- a_0, a_1, ..., a_{number_of_levels}: edge connection probabilities for level $\ell$ is set to $a_\ell \log N / N$, with $N$ being the number of nodes in the graph
+- (seed): addding a seed (optional)
 ```
-$ python3 KTSBM_plane.py number_of_levels k-nary num_nodes_per_bottom_community num_samples a_0, a_1 ... a_{number_of_levels-1} (seed)
+$ python3 KTSBM_plane.py number_of_levels k-nary num_nodes_per_bottom_community num_samples a_0 a_1 ... a_{number_of_levels} (seed)
 ```
 
 For example, to obtain one-sample values at a_1 = 50, a_2 = 60 for Figure 2, 
 ```
-$ python3 KTSBM_plane.py 4 2 200 1 40 50 60 100
+$ python3 KTSBM_plane.py 3 2 200 1 40 50 60 100
 ``` 
 
 To obtain one-sample values at a_1 = 50, a_2 = 60 for Figure 8, 
 ```
-$ python3 KTSBM_plane.py 4 3 100 1 10 50 60 130
+$ python3 KTSBM_plane.py 3 3 100 1 10 50 60 130
 ``` 
 
 
 ### Unbalanced tree example 1 (Figure 9) and example 2 (Figure 10)
-You can run the following command:
+To reproduce the results of Figure 2, you can run the following command by varying the following parameters:
+- beta, a_last: parameters for the edge connection probabilties. The edge connection probability on level $\ell$ is set to be $\text{a\_last}~\text{beta}^{L-\ell} \log N / N$, with $L$ being the total number of levels.
+- num_nodes_per_bottom_community
+- example1/2: chose example 1 or example 2
 ```
 $ python3 trial_on_unbalanced.py beta a_last example1/2 num_nodes_per_bottom_community
 ```
@@ -62,12 +71,12 @@ $ python3 trial_on_unbalanced.py 0.3 144 example2 100
 ### Deeper BTSBMs (Figure 11)
 You can run the following command:
 ```
-$ python3 trial_on_BTSBM.py beta a_last num_nodes_per_bottom_community number_of_levels k-nary
+$ python3 trial_on_KTSBM.py beta a_last num_nodes_per_bottom_community number_of_levels k-nary
 ```
 
 For example, to reproduce one point (at beta = 0.3) Figure 11,
 ```
-$ python3 trial_on_BTSBM.py 0.3 81 100 7 2
+$ python3 trial_on_KTSBM.py 0.3 81 100 6 2
 ``` 
 
 ## Robustness of linkage to misculstering errors (Figure 3)

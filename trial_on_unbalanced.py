@@ -24,7 +24,7 @@ def simulate(
     tree_shape="example1",
     num_nodes_unit=100,
     tree_type="merge_original",
-    num_layer=6,
+    num_layer=5,
 ):
     f = tree_shape + "_group_matrix.csv"
     if not os.path.exists(f):
@@ -51,7 +51,7 @@ def simulate(
     ]
     algos = ["rbu", "rbp"]
 
-    a_list = a_last * beta ** (np.arange(0, num_layer))[::-1]
+    a_list = a_last * beta ** (np.arange(0, num_layer + 1))[::-1]
     edge_densities = utils.calc_p_from_a(a_list, N)
     if edge_densities[-1] > 1.0:
         print(edge_densities)
@@ -156,6 +156,6 @@ if __name__ == "__main__":
         num_nodes_unit,
         # tree_type = tree_type,
         tree_type="merge",
-        num_layer=6,
+        num_layer=5,
     )
     print("Simulation ended at ", time.asctime(time.localtime()))

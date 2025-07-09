@@ -19,15 +19,15 @@ algos_labels = {
 def simulate(
     a_list,
     num_nodes=200,
-    num_layer=5,
+    num_layer=4,
     parent_seed=None,
     num_samples=10,
     num_child=2,
     rbp_with_sim=False,
 ):
-    num_true_communities = num_child ** (num_layer - 1)
+    num_true_communities = num_child**num_layer
     N = num_nodes * num_true_communities
-    layers_to_see = list(range(1, num_layer))  # [2, 3, 4, 5]
+    layers_to_see = list(range(1, num_layer + 1))  # [2, 3, 4, 5]
 
     measurements = [
         "err_St",
@@ -115,11 +115,11 @@ if __name__ == "__main__":
     num_child = int(arg[2])
     num_nodes = int(arg[3])
     num_samples = int(arg[4])
-    a_list = [float(a) for a in arg[5 : 5 + num_layer]]
-    if len(arg) >= 7 + num_layer:
-        if arg[6 + num_layer] != "None":
+    a_list = [float(a) for a in arg[5 : 6 + num_layer]]
+    if len(arg) >= 8 + num_layer:
+        if arg[7 + num_layer] != "None":
             try:
-                parent_seed = int(arg[5 + num_layer])
+                parent_seed = int(arg[6 + num_layer])
             except:
                 parent_seed = None
         else:

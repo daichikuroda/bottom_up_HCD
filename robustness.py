@@ -25,20 +25,20 @@ degrees = [d for d in range(5, 50, 5)]
 
 
 num_nodes = 200
-num_layer = 4
+num_layer = 3
 parent_seed = 13
 parent_seed2 = 42
-num_samples = 10
+num_samples = 200
 num_child = 2
-num_true_communities = 2 ** (num_layer - 1)
+num_true_communities = 2 ** (num_layer)
 N = num_nodes * num_true_communities
-layers_to_see = list(range(1, num_layer))
+layers_to_see = list(range(1, num_layer + 1))
 
 split_probs = [0.9, 0.95, None]
 
-denominator = (1 - (2 * beta) ** (num_layer - 1)) / (1 - 2 * beta)
+denominator = (1 - (2 * beta) ** (num_layer)) / (1 - 2 * beta)
 p_lasts = np.array(
-    [2 ** (num_layer - 1) * d / ((1 + beta * denominator) * N) for d in degrees]
+    [2 ** (num_layer) * d / ((1 + beta * denominator) * N) for d in degrees]
 )
 
 
@@ -63,7 +63,7 @@ def graph_split(G, q=0.9, rng=_rng2):
 
 
 for ip, p_last in enumerate(p_lasts):
-    edge_densities = p_last * beta ** (np.arange(0, num_layer))[::-1]
+    edge_densities = p_last * beta ** (np.arange(0, num_layer + 1))[::-1]
 
     if edge_densities[-1] > 1.0:
         print(edge_densities)
@@ -309,7 +309,7 @@ plt.show()
 
 
 for ip, p_last in enumerate(p_lasts):
-    edge_densities = p_last * beta ** (np.arange(0, num_layer))[::-1]
+    edge_densities = p_last * beta ** (np.arange(0, num_layer + 1))[::-1]
     shsbm_model = hsbms.shsbm_nchild(num_nodes, num_child, edge_densities)
     true_tree_D = utils.lca_to_distance_matrix(shsbm_model.group_matrix)
     P_true = shsbm_model.probability_matrix

@@ -15,13 +15,13 @@ def simulate(
     a_last,
     beta,
     num_nodes=200,
-    num_layer=5,
+    num_layer=4,
     num_child=2,
 ):
 
-    num_true_communities = num_child ** (num_layer - 1)
+    num_true_communities = num_child**num_layer
     N = num_nodes * num_true_communities
-    layers_to_see = list(range(1, num_layer))
+    layers_to_see = list(range(1, num_layer + 1))
 
     measurements = [
         "err_St",
@@ -30,7 +30,7 @@ def simulate(
 
     algos = ["rbu", "rbp"]
 
-    a_list = a_last * beta ** (np.arange(0, num_layer))[::-1]
+    a_list = a_last * beta ** (np.arange(0, num_layer + 1))[::-1]
     edge_densities = utils.calc_p_from_a(a_list, N)
     if edge_densities[-1] > 1.0:
         print(edge_densities)
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     beta = float(arg[1])
     a_last = int(arg[2])
     num_nodes = int(arg[3])
-    num_layer = int(arg[4]) + 1
+    num_layer = int(arg[4])
     num_child = int(arg[5])
     print("Simulation started at ", time.asctime(time.localtime()))
     com_detections = simulate(
